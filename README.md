@@ -5,6 +5,7 @@
 2. 작업시작전 branch 생성 (git branch '사용할 이름')
 3. 이후 해당 branch에서 작업 (git branch -a 로 사용중인 branch 확인, 본인이 작성한 브런치 앞에 *표시 확인)
 4. 작업은 remote or origin 의 repository에 저장전에 최신 공동결과물과 동기화
+
     a. git add 및 git commit(저장할 내용 확정)
     b. git fetch or pull 명령어 시행(최신 공동작업물을 가져오기)
     c. git merge origin/main (저장할 내용과 최신 공동작업물간 충돌확인)
