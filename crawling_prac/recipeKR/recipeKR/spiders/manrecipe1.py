@@ -27,8 +27,7 @@ class Manrecipe1Spider(scrapy.Spider):
                             directions.append(j.strip())
                         elif j is not None and j.text.strip()!='':
                             directions.append(j.text.strip())
-            if '' in directions:
-                print(directions)
+
             link = response.url
 
             item['title'] = title
