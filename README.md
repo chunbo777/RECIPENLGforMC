@@ -7,10 +7,15 @@
 4. 작업은 remote or origin 의 repository에 저장전에 최신 공동결과물과 동기화
 
     a. git add 및 git commit(저장할 내용 확정)
+    
     b. git fetch or pull 명령어 시행(최신 공동작업물을 가져오기)
+    
     c. git merge origin/main (저장할 내용과 최신 공동작업물간 충돌확인)
+    
     d. git push origin "본인의 branch 이름"
+    
     e. github에 가서 공동작업물(main branch)과 작업물간 충돌여부 재차 확인 및 반영
+    
     f. branch 삭제(local, remote or origin) 
 
 # scrapy
