@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+
+# 20210910
+*.h5
+*.csv
+datain/
+runs/
+output/
