@@ -7,7 +7,8 @@ try:
     execute(
         # ["scrapy", "crawl", "ssg"]
         # ["scrapy", "crawl", "wtable"]
-        ["scrapy", "crawl", "manrecipe"]
+        ["scrapy", "crawl", "haemuk"]
+        # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
     )
 except SystemExit:
