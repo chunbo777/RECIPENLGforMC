@@ -7,7 +7,8 @@ try:
     execute(
         # ["scrapy", "crawl", "ssg"]
         # ["scrapy", "crawl", "wtable"]
-        ["scrapy", "crawl", "haemuk"]
+        # ["scrapy", "crawl", "haemuk"]
+        ["scrapy", "crawl", "ssgrecipe"]
         # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
     )
