@@ -143,7 +143,8 @@ class RecipekrPipeline:
 
     def process_item(self, item, spider):
 
-        with open('./manrecipe.json', 'a', encoding='utf8') as f:
+        # with open('./wtablerecipe.json', 'a', encoding='utf8') as f:
+        with open('./haemukrecipe.json', 'a', encoding='utf8') as f:
             jsonData = json.dumps(item._values, ensure_ascii=False)
             f.write(jsonData)
 
