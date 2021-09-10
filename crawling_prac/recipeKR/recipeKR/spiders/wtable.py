@@ -7,7 +7,7 @@ import traceback
 class WtableSpider(scrapy.Spider):
     name = 'wtable'
     allowed_domains = ['wtable.co.kr']
-    start_urls = ['http://wtable.co.kr/recipes']
+    # start_urls = ['http://wtable.co.kr/recipes']
     
     with open('./wtableRecipeToken.json', encoding='utf8') as f:
         jsonData = json.load(fp=f)['data']
