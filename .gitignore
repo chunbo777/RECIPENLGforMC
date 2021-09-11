@@ -129,9 +129,10 @@ dmypy.json
 .pyre/
 
 
-# 20210910
 *.h5
 *.csv
+*.json
+
 datain/
 runs/
 output/
