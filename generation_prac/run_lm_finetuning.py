@@ -37,7 +37,8 @@ class TextDataset(Dataset):
     def __init__(self, tokenizer, file_path='train', block_size=512):
         # cached_features_file = "unsupervised.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5"
-        cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
+        # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
+        cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_translated.h5"
 
         logger.info("Loading features from cached file %s", cached_features_file)
         with h5py.File(cached_features_file, 'r') as f:
@@ -92,7 +93,7 @@ def train(args, train_dataset, model, tokenizer):
     '''
 
     try:
-        from apex import amp
+        from apex import amp# 여기서는 gpu가 없어 안돌아감
     except ImportError:
         raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
     model, optimizer = amp.initialize(model, optimizer, opt_level="O2")#>>1278MiB
@@ -250,7 +251,8 @@ def main():
     #                     help="The output directory where the model predictions and checkpoints will be written.")
     #20210826 default 수정 및 required property 미사용 처리
     # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5', type=str, help="The input training data file (a text file).")
-    parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5', type=str, help="The input training data file (a text file).")
+    # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5', type=str, help="The input training data file (a text file).")
+    parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_translated.h5', type=str, help="The input training data file (a text file).")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_short/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_mbien/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_gpt2/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
