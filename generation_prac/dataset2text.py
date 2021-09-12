@@ -4,9 +4,16 @@ import pandas as pd
 df = pd.read_csv("/home/lab17/recipe_generation/recipenlg/generation/datain/full_dataset.csv")
 
 import re
+# It is crucial to create the model that generate ”rich”, extensive recipes. 
+# Therefore, we removed recipes that do not provide the model with sufficiently comprehensive information
+# , such as one-ingredient recipes or recipes with short instructions. 
+# Part of generating a recipe is the title generation. 
+# We intend to generating the title strictly related to the content of the recipe
 df.drop(df[df.title.map(lambda x: len(x)<4)].index, inplace=True)
 df.drop(df[df.ingredients.map(lambda x: len(x)<2)].index, inplace=True)
 df.drop(df[df.directions.map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
+# It is also impossible to check if the model has learned to refer to previous steps correctly.
+# The incorrect use of the word ’step’ causes losing the meaning of the entire instruction
 df.drop(df[df.directions.map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
 
 df.reset_index(drop=True, inplace=True)
