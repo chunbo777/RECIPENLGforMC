@@ -9,7 +9,8 @@ try:
         # ["scrapy", "crawl", "wtable"]
         # ["scrapy", "crawl", "haemuk"]
         # ["scrapy", "crawl", "ssgrecipe"]
-        ["scrapy", "crawl", "manrecipe1"]
+        # ["scrapy", "crawl", "manrecipe1"]
+        ["scrapy", "crawl", "chungjungone"]
         # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
     )

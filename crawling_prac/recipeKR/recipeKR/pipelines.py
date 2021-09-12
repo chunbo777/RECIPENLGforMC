@@ -146,7 +146,8 @@ class RecipekrPipeline:
         # with open('./wtablerecipe.json', 'a', encoding='utf8') as f:
         # with open('./haemukrecipe.json', 'a', encoding='utf8') as f:
         # with open('./ssgrecipe.json', 'a', encoding='utf8') as f:
-        with open('./manrecipe1.json', 'a', encoding='utf8') as f:
+        # with open('./manrecipe1.json', 'a', encoding='utf8') as f:
+        with open('./chungjungone.json', 'a', encoding='utf8') as f:
             jsonData = json.dumps(item._values, ensure_ascii=False)
             f.write(jsonData)
 
