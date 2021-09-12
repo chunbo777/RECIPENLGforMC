@@ -131,8 +131,11 @@ dmypy.json
 
 *.h5
 *.csv
-*.json
+.json
 
 datain/
+dataout/
 runs/
 output/
+wandb/
+
