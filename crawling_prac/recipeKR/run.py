@@ -11,6 +11,9 @@ try:
         ["scrapy", "crawl", "ssgrecipe"]
         # ["scrapy", "crawl", "manrecipe1"]
         # ["scrapy", "crawl", "chungjungone"]
+        # ["scrapy", "crawl", "chungjungonetable"]
+        # ["scrapy", "crawl", "philips"]
+        # ["scrapy", "crawl", "cheiljedangrecipe"]
         # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
     )
