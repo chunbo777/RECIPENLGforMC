@@ -10,7 +10,7 @@ class SsgrecipeSpider(CrawlSpider):
     allowed_domains = ['emart.ssg.com']
 
     download_delay = 1.4
-    start_urls = [f'http://emart.ssg.com/recipe/list.ssg?page={i}&sort=regdt&searchType=list' for i in range(2914, 3860)]
+    start_urls = [f'http://emart.ssg.com/recipe/list.ssg?page={i}&sort=regdt&searchType=list' for i in range(3120, 3860)]
 
     rules = (
         Rule(
