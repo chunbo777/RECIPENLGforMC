@@ -16,7 +16,7 @@ class ManrecipeSpider(scrapy.Spider):
     page_num = 1
     download_delay = 1.5
     urlPath = './manRecipeUrls.txt'
-    urlFile = open('./second.txt', 'r', encoding='utf8')
+    urlFile = open('./data/second.txt', 'r', encoding='utf8')
 
         
     def start_requests(self):

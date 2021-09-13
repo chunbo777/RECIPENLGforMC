@@ -26,6 +26,10 @@ from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup, 
 
 logger = logging.getLogger(__name__)
 
+
+import wandb
+wandb.login()
+
 import tarfile
 def tardir(path, tar_name):
     with tarfile.open(tar_name, "w") as tar_handle:
@@ -38,14 +42,16 @@ class TextDataset(Dataset):
         # cached_features_file = "unsupervised.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
-        cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_translated.h5"
+        cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5"
 
         logger.info("Loading features from cached file %s", cached_features_file)
         with h5py.File(cached_features_file, 'r') as f:
             if file_path=='test':
-                self.examples = f[file_path][:] #this is a dev set, 10% of a test set
+                # self.examples = f[file_path][:] #this is a dev set, 10% of a test set
+                self.examples = f['unsupervised_test_translated'][:] # 저장할때 사용한 파일명
             else:
-                self.examples = f[file_path][:]
+                # self.examples = f[file_path][:]
+                self.examples = f['unsupervised_train_translated'][:]#  저장할때 사용한 파일명
 
     def __len__(self):
         return len(self.examples)
@@ -56,14 +62,14 @@ class TextDataset(Dataset):
 
 
 def load_and_cache_examples(args, tokenizer, evaluate=False):
-    dataset = TextDataset(tokenizer, file_path="test" if evaluate else "train", block_size=args.block_size)
+
+    dataset = TextDataset(tokenizer, file_path="test" if evaluate else "train", block_size= args.block_size)
     return dataset
 
 
 def train(args, train_dataset, model, tokenizer):
     """ Train the model """
     tb_writer = SummaryWriter()
-
 
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
     train_sampler = RandomSampler(train_dataset)
@@ -77,11 +83,14 @@ def train(args, train_dataset, model, tokenizer):
 
     # Prepare optimizer and schedule (linear warmup and decay)
     no_decay = ['bias', 'LayerNorm.weight']
+
     optimizer_grouped_parameters = [
         {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)], 'weight_decay': args.weight_decay},
         {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
         ]
+    
     optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate, eps=args.adam_epsilon)
+
     scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps, num_training_steps=t_total)
 
     '''
@@ -133,17 +142,18 @@ def train(args, train_dataset, model, tokenizer):
 
             tr_loss += loss.item()
             if (step) % args.gradient_accumulation_steps == 0:
+
                 torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
                 optimizer.step()
                 scheduler.step()  # Update learning rate schedule
                 model.zero_grad()
                 global_step += 1
-
                 if args.logging_steps > 0 and global_step % args.logging_steps == 0:
                     # Log metrics
                     tb_writer.add_scalar('lr', scheduler.get_lr()[0], global_step)
                     tb_writer.add_scalar('loss', (tr_loss - logging_loss)/args.logging_steps, global_step)
                     logging_loss = tr_loss
+                    wandb.log({f"learning_rate each {args.logging_steps} steps": scheduler.get_lr()[0]})#20210912
 
                 if args.save_steps > 0 and global_step % args.save_steps == 0:
                     # Save model checkpoint
@@ -160,7 +170,7 @@ def train(args, train_dataset, model, tokenizer):
                         results = evaluate(args, model, tokenizer)
                         for key, value in results.items():
                             tb_writer.add_scalar('eval_{}'.format(key), value, global_step)
-
+                            wandb.log({f"evaluate_during_training_{key}": value})#20210912
                     if args.aws_bucket:
                         tgz = "checkpoint-{}.tar".format(global_step)
                         tardir(output_dir, tgz)
@@ -191,6 +201,7 @@ def evaluate(args, model, tokenizer, prefix=""):
 
     if not os.path.exists(eval_output_dir):
         os.makedirs(eval_output_dir)
+
 
     args.eval_batch_size = args.per_gpu_eval_batch_size * max(1, args.n_gpu)
     # Note that DistributedSampler samples randomly
@@ -226,6 +237,7 @@ def evaluate(args, model, tokenizer, prefix=""):
     that cannot be treated as a single source of truth about model performance.
     '''
     perplexity = torch.exp(torch.tensor(eval_loss))
+    wandb.log({'val_loss': eval_loss, 'perplexity': perplexity}) # 20210913
 
     result = {
         "perplexity": perplexity
@@ -242,8 +254,11 @@ def evaluate(args, model, tokenizer, prefix=""):
 
 
 def main():
-    parser = argparse.ArgumentParser()
 
+    #Run pjgba7co errored: ValueError('You must call `wandb.init` before calling watch')
+    wandb.init(project='with translated') 
+
+    parser = argparse.ArgumentParser()
     ## Required parameters
     # parser.add_argument("--train_data_file", default=None, type=str, required=True,
     #                     help="The input training data file (a text file).")
@@ -252,14 +267,15 @@ def main():
     #20210826 default 수정 및 required property 미사용 처리
     # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5', type=str, help="The input training data file (a text file).")
     # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5', type=str, help="The input training data file (a text file).")
-    parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_translated.h5', type=str, help="The input training data file (a text file).")
+    parser.add_argument("--train_data_file", default='/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5', type=str, help="The input training data file (a text file).")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_short/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
-    parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_mbien/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
+    parser.add_argument("--output_dir", default='/home/lab17/RECIPENLGforMC/generation_prac/dataout/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_gpt2/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
 
     ## Other parameters
-    parser.add_argument("--eval_data_file", default=None, type=str,
-                        help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
+    # parser.add_argument("--eval_data_file", default=None, type=str,
+    #                     help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
+    parser.add_argument("--eval_data_file", default='/home/lab17/RECIPENLGforMC/generation_prac/dataout/eval_data_file.txt', type=str)
 
     parser.add_argument("--model_type", default="bert", type=str,
                         help="The model architecture to be fine-tuned.")
@@ -280,14 +296,22 @@ def main():
 
     parser.add_argument("--cache_dir", default="", type=str,
                         help="Optional directory to store the pre-trained models downloaded from s3 (instread of the default one)")
-    parser.add_argument("--block_size", default=-1, type=int,
-                        help="Optional input sequence length after tokenization."
-                             "The training dataset will be truncated in block of this size for training."
-                             "Default to the model max input length for single sentence inputs (take into account special tokens).")
+
+
+    # parser.add_argument("--block_size", default=-1, type=int,
+    #                     help="Optional input sequence length after tokenization."
+    #                          "The training dataset will be truncated in block of this size for training."
+    #                          "Default to the model max input length for single sentence inputs (take into account special tokens).")
+    parser.add_argument("--block_size", default=wandb.config.block_size if 'block_size' in wandb.config.keys() and isinstance(wandb.config.block_size, int) else -1, type=int)
+
+
     # parser.add_argument("--do_train", action='store_true', help="Whether to run training.")
     parser.add_argument("--do_train", action='store_true', default=True, help="Whether to run training.")#20210826
-    parser.add_argument("--do_eval", action='store_true',
-                        help="Whether to run eval on the dev set.")
+
+    # parser.add_argument("--do_eval", action='store_true',
+    #                     help="Whether to run eval on the dev set.")
+    parser.add_argument("--do_eval", action='store_true', default=True)
+
     parser.add_argument("--evaluate_during_training", action='store_true',
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
@@ -296,26 +320,56 @@ def main():
     #20210831
     # parser.add_argument("--per_gpu_train_batch_size", default=4, type=int,
     #                     help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--per_gpu_train_batch_size", default=4, type=int, help="Batch size per GPU/CPU for training.")
+    parser.add_argument("--per_gpu_train_batch_size", type=int
+    , default=wandb.config.per_gpu_train_batch_size if 'per_gpu_train_batch_size' in wandb.config.keys() and isinstance(wandb.config.per_gpu_train_batch_size, int) else 4
+    , help="Batch size per GPU/CPU for training.")
+
     # parser.add_argument("--per_gpu_eval_batch_size", default=4, type=int,
     #                     help="Batch size per GPU/CPU for evaluation.")
-    parser.add_argument("--per_gpu_eval_batch_size", default=4, type=int, help="Batch size per GPU/CPU for evaluation.")
-    parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
-                        help="Number of updates steps to accumulate before performing a backward/update pass.")
-    parser.add_argument("--learning_rate", default=5e-5, type=float,
-                        help="The initial learning rate for Adam.")
-    parser.add_argument("--weight_decay", default=0.0, type=float,
-                        help="Weight deay if we apply some.")
-    parser.add_argument("--adam_epsilon", default=1e-8, type=float,
-                        help="Epsilon for Adam optimizer.")
-    parser.add_argument("--max_grad_norm", default=1.0, type=float,
-                        help="Max gradient norm.")
+    parser.add_argument("--per_gpu_eval_batch_size", type=int
+    , default=wandb.config.per_gpu_eval_batch_size if 'per_gpu_eval_batch_size' in wandb.config.keys() and isinstance(wandb.config.per_gpu_eval_batch_size, int) else 4
+    , help="Batch size per GPU/CPU for evaluation.")
+
+
+    # parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
+    #                     help="Number of updates steps to accumulate before performing a backward/update pass.")
+    parser.add_argument('--gradient_accumulation_steps', type=int
+    , default=wandb.config.gradient_accumulation_steps if 'gradient_accumulation_steps' in wandb.config.keys() and isinstance(wandb.config.gradient_accumulation_steps, int) else 1)
+
+    # parser.add_argument("--learning_rate", default=5e-5, type=float,
+    #                     help="The initial learning rate for Adam.")
+    parser.add_argument("--learning_rate", type=float
+    , default=wandb.config.learning_rate if 'learning_rate' in wandb.config.keys() and isinstance(wandb.config.learning_rate, float) else 5e-5)
+
+    # parser.add_argument("--weight_decay", default=0.0, type=float,
+    #                     help="Weight deay if we apply some.")
+    parser.add_argument("--weight_decay", type=float
+    , default=wandb.config.weight_decay if 'weight_decay' in wandb.config.keys() and isinstance(wandb.config.weight_decay, float) else 0.0)
+
+
+    # parser.add_argument("--adam_epsilon", default=1e-8, type=float,
+    #                     help="Epsilon for Adam optimizer.")
+    parser.add_argument("--adam_epsilon", type=float
+    , default=wandb.config.adam_epsilon if 'adam_epsilon' in wandb.config.keys() and isinstance(wandb.config.adam_epsilon, float) else 1e-8)
+
+    # parser.add_argument("--max_grad_norm", default=1.0, type=float,
+    #                     help="Max gradient norm.")
+    parser.add_argument("--max_grad_norm", type=float
+    , default=wandb.config.max_grad_norm if 'max_grad_norm' in wandb.config.keys() and isinstance(wandb.config.max_grad_norm, float) else 1.0)
+    
     parser.add_argument("--num_train_epochs", default=1.0, type=float,
                         help="Total number of training epochs to perform.")
+    # parser.add_argument("--num_train_epochs", default=2.0, type=float, help="Total number of training epochs to perform.")
+
     parser.add_argument("--max_steps", default=-1, type=int,
                         help="If > 0: set total number of training steps to perform. Override num_train_epochs.")
-    parser.add_argument("--warmup_steps", default=0, type=int,
-                        help="Linear warmup over warmup_steps.")
+    # parser.add_argument("--max_steps", default=5, type=int)
+
+    
+    # parser.add_argument("--warmup_steps", default=0, type=int,
+    #                     help="Linear warmup over warmup_steps.")
+    parser.add_argument("--warmup_steps", type=int
+    , default=wandb.config.warmup_steps if 'warmup_steps' in wandb.config.keys() and isinstance(wandb.config.warmup_steps, int) else 0)
 
     parser.add_argument('--logging_steps', type=int, default=50,
                         help="Log every X updates steps.")
@@ -366,7 +420,7 @@ def main():
     '''
     model_class = GPT2LMHeadModel
     model = model_class.from_pretrained(args.model_name_or_path)
-
+    wandb.watch(model)#20210913
     '''
     20210902
     While pretrained GPT-2 offers rich dictionary of language tokens
@@ -377,12 +431,29 @@ def main():
     # 이게 추가적으로 조정되는것이 아니라면 finedtuned 된 vocab 정보를 가지고 오는게 필요해 보임
     tokenizer = tokenizer_class.from_pretrained(temp, do_lower_case=args.do_lower_case)
     special_tokens = {
+        # "additional_special_tokens": [
+        #     "<RECIPE_START>", "<RECIPE_END>",
+        #     "<INPUT_START>", "<INPUT_END>", "<NEXT_INPUT>"
+        #     "<INGR_START>", "<NEXT_INGR>", "<INGR_END>",
+        #     "<INSTR_START>", "<NEXT_INSTR>", "<INSTR_END>",
+        #     "<TITLE_START>", "<TITLE_END>",
+        # ]
+
+        # 20210913 dataset 만들때 순서가 변경된 경우 영향이 있음
         "additional_special_tokens": [
-            "<RECIPE_START>", "<RECIPE_END>",
-            "<INPUT_START>", "<INPUT_END>", "<NEXT_INPUT>"
-            "<INGR_START>", "<NEXT_INGR>", "<INGR_END>",
-            "<INSTR_START>", "<NEXT_INSTR>", "<INSTR_END>",
-            "<TITLE_START>", "<TITLE_END>",
+            "<TITLE_START>",
+            "<TITLE_END>",
+            "<INSTR_START>",
+            "<NEXT_INSTR>",
+            "<INSTR_END>",
+            "<INGR_START>",
+            "<NEXT_INGR>",
+            "<INGR_END>",
+            "<RECIPE_START>",
+            "<RECIPE_END>",
+            "<INPUT_START>",
+            "<INPUT_END>",
+            "<NEXT_INPUT>"
         ]
     }
 
@@ -400,8 +471,6 @@ def main():
     model.to(args.device)#1204MiB
 
     logger.info("Training/evaluation parameters %s", args)
-
-
 
     # Training
     if args.do_train:
@@ -450,11 +519,54 @@ def main():
             result = evaluate(args, model, tokenizer, prefix=global_step)
             result = dict((k + '_{}'.format(global_step), v) for k, v in result.items())
             results.update(result)
-
+    # ✍️ Log your final accuracy as a Summary Metric ✍️
+    # wandb.run.summary["final_accuracy"] = epoch_acc
+    # wandb.run.finish()
     return results
+
+def get_sweep_id(method):
+    sweep_config = {
+        'method': method
+        , 'metric' : {'name':'val_loss', 'goal':'minimize'}
+        , 'parameters' : {
+            # 'block_size':{
+            #     'values':[254,512]
+            # },
+            'per_gpu_train_batch_size':{
+                'values':[3, 4]
+            },
+            'per_gpu_eval_batch_size':{
+                'values':[3, 4]
+            },
+            # 'gradient_accumulation_steps':{
+            #     'values':[1,2]
+            # },
+            'learning_rate':{
+                'values':[1e-5,5e-5,2e-6]
+            },
+            # 'weight_decay':{
+            #     'values':[0.0,1e-5]
+            # },
+            # 'adam_epsilon':{
+            #     'values':[1e-7,1e-8,1e-7]
+            # },
+            # 'max_grad_norm':{
+            #     'values':[0.5,1.0,1.5]
+            # },
+            # 'warmup_steps':{
+            #     'values':[0,1]
+            # },
+        }
+    }
+
+    sweep_id = wandb.sweep(sweep_config, project="cartpole") 
+    return sweep_id
 
 
 if __name__ == "__main__":
     # 20210902
     # main()
-    results = main()
+    # results = main()
+    # 20210912
+    sweep_id = get_sweep_id('grid')
+    wandb.agent(sweep_id=sweep_id, function=main)

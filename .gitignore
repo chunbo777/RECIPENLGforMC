@@ -132,8 +132,16 @@ dmypy.json
 *.h5
 *.csv
 *.json
+*.jar
 
+data/
 datain/
+dataout/
 runs/
 output/
+<<<<<<< HEAD
 data/
+=======
+wandb/
+
+>>>>>>> origin/main
