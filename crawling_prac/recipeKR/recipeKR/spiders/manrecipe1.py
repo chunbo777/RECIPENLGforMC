@@ -8,7 +8,7 @@ class Manrecipe1Spider(scrapy.Spider):
     allowed_domains = ['10000recipe.com']
     start_urls = ['http://10000recipe.com/']
 
-    with open('./second.txt', 'r', encoding='utf8') as f:
+    with open('./data/second.txt', 'r', encoding='utf8') as f:
         start_urls = [f'https://www.10000recipe.com{line}' for line in f.readlines()]
 
     def parse(self, response, **kwargs):
