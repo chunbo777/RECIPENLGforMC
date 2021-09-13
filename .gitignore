@@ -136,3 +136,4 @@ dmypy.json
 datain/
 runs/
 output/
+data/
