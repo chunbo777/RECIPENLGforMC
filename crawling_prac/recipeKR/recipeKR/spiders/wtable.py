@@ -9,7 +9,7 @@ class WtableSpider(scrapy.Spider):
     allowed_domains = ['wtable.co.kr']
     # start_urls = ['http://wtable.co.kr/recipes']
     
-    with open('./wtableRecipeToken.json', encoding='utf8') as f:
+    with open('./data/wtableRecipeToken.json', encoding='utf8') as f:
         jsonData = json.load(fp=f)['data']
         start_urls = [f'https://wtable.co.kr/recipes/{data["token"]}' for data in jsonData]
 
