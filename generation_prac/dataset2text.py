@@ -1,7 +1,8 @@
 from sklearn.model_selection import train_test_split
 import pandas as pd
-
-df = pd.read_csv("/home/lab17/recipe_generation/recipenlg/generation/datain/full_dataset.csv")
+import re
+# df = pd.read_csv("/home/lab17/recipe_generation/recipenlg/generation/datain/full_dataset.csv")
+df = pd.read_csv("/home/lab17/RECIPENLGforMC/generation_prac/datain/data_1m.csv", )
 
 import re
 # It is crucial to create the model that generate ”rich”, extensive recipes. 
@@ -9,12 +10,16 @@ import re
 # , such as one-ingredient recipes or recipes with short instructions. 
 # Part of generating a recipe is the title generation. 
 # We intend to generating the title strictly related to the content of the recipe
-df.drop(df[df.title.map(lambda x: len(x)<4)].index, inplace=True)
-df.drop(df[df.ingredients.map(lambda x: len(x)<2)].index, inplace=True)
-df.drop(df[df.directions.map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
+# df.drop(df[df.title.map(lambda x: len(x)<4)].index, inplace=True)
+df.drop(df[df[df.columns[1]].map(lambda x: len(x)<4)].index, inplace=True)
+# df.drop(df[df.ingredients.map(lambda x: len(x)<2)].index, inplace=True)
+df.drop(df[df[df.columns[2]].map(lambda x: len(x)<2)].index, inplace=True)
+# df.drop(df[df.directions.map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
+df.drop(df[df[df.columns[3]].map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
 # It is also impossible to check if the model has learned to refer to previous steps correctly.
 # The incorrect use of the word ’step’ causes losing the meaning of the entire instruction
-df.drop(df[df.directions.map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
+# df.drop(df[df.directions.map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
+df.drop(df[df[df.columns[3]].map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
 
 df.reset_index(drop=True, inplace=True)
 
@@ -27,6 +32,9 @@ The amount of data was intentionally selected big enough to be further divided a
 The additional test set was also prepared for the purpose of checking evaluation metrics. 
 
 '''
+# 학습데이터의 크기조정
+df = df.iloc[:int(df.shape[0]/4)]
+
 train, test = train_test_split(df, test_size=0.05) #use 5% for test set
 train.reset_index(drop=True, inplace=True)
 test.reset_index(drop=True, inplace=True)
@@ -39,14 +47,17 @@ def df_to_plaintext_file(input_df, output_file):
         for index, row in input_df.iterrows():
             if index%100000==0:
                 print(index)
-                if index > 0:#20210830 학습시간을 줄이기 위해 생성
-                    break
-            if type(row.NER)!=str:
+            # if type(row.NER)!=str:
+            if type(row[row.index.values[-1]])!=str:
                 continue
-            title = row.title
-            directions = json.loads(row.directions)
-            ingredients = json.loads(row.ingredients)
-            ner = json.loads(row.NER)
+            # title = row.title
+            # directions = json.loads(row.directions)
+            # ingredients = json.loads(row.ingredients)
+            # ner = json.loads(row.NER)
+            title = row[row.index.values[1]].replace('\u200b','')
+            directions = re.split('"[,\s|\s,]+["]*', row[row.index.values[2]].replace('\u200b','').strip(' "[]"'))
+            ingredients = re.split('"[,\s|\s,]+["]*', row[row.index.values[3]].replace('\u200b','').strip(' "[]"'))
+            ner = re.split('"[,\s|\s,]+["]*', row[row.index.values[4]].replace('\u200b','').strip(' "[]"'))
             '''
             20210902
             Control tokens were inserted into the recipe. 
@@ -63,5 +74,5 @@ def df_to_plaintext_file(input_df, output_file):
               " <NEXT_INSTR> ".join(directions) + " <INSTR_END> <TITLE_START> " + title + " <TITLE_END> <RECIPE_END>"
             f.write("{}\n".format(res))
 
-df_to_plaintext_file(train, '/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_train_short.txt')
-df_to_plaintext_file(test, '/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_test_short.txt')
+df_to_plaintext_file(train, '/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_train_kr_1m_translated_short.txt')
+df_to_plaintext_file(test, '/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_test_kr_1m_translated_short.txt')
