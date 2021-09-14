@@ -27,10 +27,10 @@ tokenizer.add_special_tokens(special_tokens)
 
 end_token_id = tokenizer.convert_tokens_to_ids(["<RECIPE_END>"])[0]
 
-hf = h5py.File("/home/dasomoh88/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5", "w")
-for filename in ["unsupervised_test_translated", "unsupervised_train_translated"]:
+hf = h5py.File("/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated_short.h5", "w")
+for filename in ["unsupervised_test_kr_1m_translated_short", "unsupervised_train_kr_1m_translated_short"]:
     out_np = []
-    data = open("/home/dasomoh88/RECIPENLGforMC/generation_prac/datain/"+filename+".txt", "r", encoding='utf-8')
+    data = open("/home/lab17/RECIPENLGforMC/generation_prac/datain/"+filename+".txt", "r", encoding='utf-8')
     num = 0
     rows = 0
     last=[]
