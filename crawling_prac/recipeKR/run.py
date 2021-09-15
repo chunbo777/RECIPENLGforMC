@@ -16,7 +16,8 @@ try:
         # ["scrapy", "crawl", "cheiljedangrecipe"]
         # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
-        ["scrapy", "crawl", "lampcook"]
+        # ["scrapy", "crawl", "lampcook"]
+        ["scrapy", "crawl", "lampcook_fusion"]
     )
 except SystemExit:
     pass

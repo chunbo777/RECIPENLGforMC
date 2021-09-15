@@ -150,7 +150,8 @@ class RecipekrPipeline:
         # with open('./data/chungjungone.json', 'a', encoding='utf8') as f:
         # with open('./data/philips.json', 'a', encoding='utf8') as f:
         # with open('./data/cheiljedang.json', 'a', encoding='utf8') as f:
-        with open('./data/lampcook_north.json', 'a', encoding='utf8') as f:
+        # with open('./data/lampcook_north.json', 'a', encoding='utf8') as f:
+        with open('./data/lampcook_fusion.json', 'a', encoding='utf8') as f:
 
             jsonData = json.dumps(item._values, ensure_ascii=False)
             f.write(jsonData)
