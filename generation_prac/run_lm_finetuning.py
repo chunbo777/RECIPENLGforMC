@@ -543,17 +543,17 @@ def get_sweep_id(method):
             #     'values':[254,512]
             # },
             'per_gpu_train_batch_size':{
-                'values':[3, 4]
+                'values':[3, 4, 5]
             },
-            'per_gpu_eval_batch_size':{
-                'values':[3, 4]
-            },
+            # 'per_gpu_eval_batch_size':{
+            #     'values':[3, 4]
+            # },
             # 'gradient_accumulation_steps':{
             #     'values':[1,2]
             # },
-            'learning_rate':{
-                'values':[1e-5,5e-5,2e-6]
-            },
+            # 'learning_rate':{
+            #     'values':[1e-5,5e-5,2e-6]
+            # },
             # 'weight_decay':{
             #     'values':[0.0,1e-5]
             # },

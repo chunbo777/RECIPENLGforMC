@@ -8,7 +8,7 @@ try:
         # ["scrapy", "crawl", "ssg"]
         # ["scrapy", "crawl", "wtable"]
         # ["scrapy", "crawl", "haemuk"]
-        ["scrapy", "crawl", "ssgrecipe"]
+        # ["scrapy", "crawl", "ssgrecipe"]
         # ["scrapy", "crawl", "manrecipe1"]
         # ["scrapy", "crawl", "chungjungone"]
         # ["scrapy", "crawl", "chungjungonetable"]
