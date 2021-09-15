@@ -6,10 +6,11 @@ from bs4 import BeautifulSoup
 import traceback
 import re
 
-class LampcookRecomSpider(CrawlSpider):
-    name = 'lampcook_recom'
+
+class LampcookRealSpider(CrawlSpider):
+    name = 'lampcook_real'
     allowed_domains = ['lampcook.com']
-    start_urls = [f'http://www.lampcook.com/food/food_recom_list.php?big_no=0&pagenum={i}' for i in range(1,23)]
+    start_urls = [f'http://www.lampcook.com/food/food_recom_list.php?big_no=0&pagenum={i}' for i in range(1,14)]
 
     rules = (
         Rule(LinkExtractor(allow=r'/food/food_recom_view'), callback='parse_item', follow=True),
@@ -41,7 +42,7 @@ class LampcookRecomSpider(CrawlSpider):
                 item['directions'] = directions
                 item['link'] = link
 
-                yield item
+                print(item)
+                # yield item
         except Exception as e:
             traceback.print_exc()
-

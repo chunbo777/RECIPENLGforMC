@@ -19,7 +19,7 @@ try:
         # ["scrapy", "crawl", "lampcook"]
         # ["scrapy", "crawl", "lampcook_fusion"]
         # ["scrapy", "crawl", "lampcook_wellbeing"]
-        ["scrapy", "crawl", "lampcook_recom"]
+        ["scrapy", "crawl", "lampcook_real"]
     )
 except SystemExit:
     pass
