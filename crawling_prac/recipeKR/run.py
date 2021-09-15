@@ -18,7 +18,8 @@ try:
         # ["scrapy", "crawl", "quotes"]
         # ["scrapy", "crawl", "lampcook"]
         # ["scrapy", "crawl", "lampcook_fusion"]
-        ["scrapy", "crawl", "lampcook_wellbeing"]
+        # ["scrapy", "crawl", "lampcook_wellbeing"]
+        ["scrapy", "crawl", "lampcook_recom"]
     )
 except SystemExit:
     pass
