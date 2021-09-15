@@ -42,16 +42,19 @@ class TextDataset(Dataset):
         # cached_features_file = "unsupervised.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
-        cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5"
+        # cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5"
+        cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated_short.h5"
 
         logger.info("Loading features from cached file %s", cached_features_file)
         with h5py.File(cached_features_file, 'r') as f:
             if file_path=='test':
                 # self.examples = f[file_path][:] #this is a dev set, 10% of a test set
-                self.examples = f['unsupervised_test_translated'][:] # 저장할때 사용한 파일명
+                # self.examples = f['unsupervised_test_translated'][:] # 저장할때 사용한 파일명
+                self.examples = f['unsupervised_test_kr_1m_translated_short'][:] # 저장할때 사용한 파일명
             else:
                 # self.examples = f[file_path][:]
-                self.examples = f['unsupervised_train_translated'][:]#  저장할때 사용한 파일명
+                # self.examples = f['unsupervised_train_translated'][:]#  저장할때 사용한 파일명
+                self.examples = f['unsupervised_train_kr_1m_translated_short'][:]#  저장할때 사용한 파일명
 
     def __len__(self):
         return len(self.examples)
@@ -134,6 +137,9 @@ def train(args, train_dataset, model, tokenizer):
             # loss = outputs[0] # model outputs are always tuple in transformers (see doc)
             loss = outputs['loss'] #20210830
 
+            wandb.log({f"loss": loss})#20210912
+            
+
             if args.gradient_accumulation_steps > 1:
                 loss = loss / args.gradient_accumulation_steps
 
@@ -146,14 +152,17 @@ def train(args, train_dataset, model, tokenizer):
                 torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
                 optimizer.step()
                 scheduler.step()  # Update learning rate schedule
+
+                wandb.log({f"learning_rate": scheduler.get_lr()[0]})#20210912
+
                 model.zero_grad()
                 global_step += 1
+                
                 if args.logging_steps > 0 and global_step % args.logging_steps == 0:
                     # Log metrics
                     tb_writer.add_scalar('lr', scheduler.get_lr()[0], global_step)
                     tb_writer.add_scalar('loss', (tr_loss - logging_loss)/args.logging_steps, global_step)
                     logging_loss = tr_loss
-                    wandb.log({f"learning_rate each {args.logging_steps} steps": scheduler.get_lr()[0]})#20210912
 
                 if args.save_steps > 0 and global_step % args.save_steps == 0:
                     # Save model checkpoint
@@ -267,7 +276,8 @@ def main():
     #20210826 default 수정 및 required property 미사용 처리
     # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5', type=str, help="The input training data file (a text file).")
     # parser.add_argument("--train_data_file", default='/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5', type=str, help="The input training data file (a text file).")
-    parser.add_argument("--train_data_file", default='/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5', type=str, help="The input training data file (a text file).")
+    # parser.add_argument("--train_data_file", default='/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5', type=str, help="The input training data file (a text file).")
+    parser.add_argument("--train_data_file", default='/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated_short.h5', type=str, help="The input training data file (a text file).")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_short/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     parser.add_argument("--output_dir", default='/home/lab17/RECIPENLGforMC/generation_prac/dataout/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
     # parser.add_argument("--output_dir", default='/home/lab17/recipe_generation/recipenlg/output_gpt2/', type=str, help="The output directory where the model predictions and checkpoints will be written.")
