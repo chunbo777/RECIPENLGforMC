@@ -9,10 +9,6 @@ df1 = pd.read_csv("/home/lab17/RECIPENLGforMC/generation_prac/datain/data_1m.csv
 import re
 
 
-
-#dkdkdkdkdkdkdkdkdkd 수정했습니다.
-
-
 # It is crucial to create the model that generate ”rich”, extensive recipes. 
 # Therefore, we removed recipes that do not provide the model with sufficiently comprehensive information
 # , such as one-ingredient recipes or recipes with short instructions. 
