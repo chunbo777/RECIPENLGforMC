@@ -8,7 +8,7 @@ from bs4 import BeautifulSoup
 
 
 class LampcookSpider(CrawlSpider):
-    name = 'lampcook'
+    name = 'lampcook_north'
     allowed_domains = ['lampcook.com']
     # start_urls = [f'http://www.lampcook.com/food/food_local_list.php?pagenum={i}' for i in range(1,326)]
     start_urls = [f'http://www.lampcook.com/food/food_north_list.php?pagenum={i}' for i in range(1, 2833)]
