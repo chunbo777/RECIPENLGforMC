@@ -16,11 +16,11 @@ try:
         # ["scrapy", "crawl", "cheiljedangrecipe"]
         # ["scrapy", "crawl", "manrecipe"]
         # ["scrapy", "crawl", "quotes"]
-        # ["scrapy", "crawl", "lampcook"]
+        ["scrapy", "crawl", "lampcook"]
         # ["scrapy", "crawl", "lampcook_fusion"]
         # ["scrapy", "crawl", "lampcook_wellbeing"]
         # ["scrapy", "crawl", "lampcook_real"]
-        ["scrapy", "crawl", "lampcook_north"]
+        # ["scrapy", "crawl", "lampcook_north"]
     )
 except SystemExit:
     pass

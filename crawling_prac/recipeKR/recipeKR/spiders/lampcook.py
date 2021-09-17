@@ -36,12 +36,19 @@ class LampcookSpider(CrawlSpider):
             soup = BeautifulSoup(response.text, "html.parser")
             
             
-            title = soup.select_one('#div_main_content > ul.glo_ul_content > li:nth-child(2) > div > h1').text.strip()
-            ingredients1=[i.strip() for i in soup.select_one("#div_main_content > div:nth-child(5) > div.padd20").text.split(",")] 
-            ingredients2=[i.strip() for i in soup.select_one("#div_main_content > div:nth-child(6) > div.padd20").text.split(",")] 
-            ingredients= ingredients1+ingredients2
+            # title = soup.select_one('#div_main_content > ul.glo_ul_content > li:nth-child(2) > div > h1').text.strip()
+            title = soup.select_one('.content_tbl_90 h1.h1_title').text.strip()
+            # ingredients1=[i.strip() for i in soup.select_one("#div_main_content > div:nth-child(5) > div.padd20").text.split(",")] 
+            # ingredients2=[i.strip() for i in soup.select_one("#div_main_content > div:nth-child(6) > div.padd20").text.split(",")] 
+            # ingredients= ingredients1+ingredients2
+            ingredients= [ingr.strip() for ingr in ','
+                                .join([ i.select_one('.padd20 span').text.strip() 
+                                            for i in soup.select('.step_content_box') 
+                                                if  len([j for j in i.children if not isinstance(j, str)]) in [2] 
+                                                    and [j for j in i.children if not isinstance(j, str)][0].text.strip() in ['주재료','부재료']]).split(',')]
             
-            directions = [soup.select_one(f"#div_main_content > div:nth-child({i+7}) > div.padd20").text.strip() for i in range(len(soup.select("div.padd20"))-5)]
+            # directions = [soup.select_one(f"#div_main_content > div:nth-child({i+7}) > div.padd20").text.strip() for i in range(len(soup.select("div.padd20"))-5)]
+            directions = [i.select_one('.padd20').text.strip() for i in soup.select('.step_content_box') if len([j for j in i.children if not isinstance(j, str)]) in [3,4]]
             
             # directions=soup.select(f"#div_main_content > div:nth-child(4) > div.padd20")
             # #div_main_content > div:nth-child(5) > div.padd20
@@ -53,8 +60,9 @@ class LampcookSpider(CrawlSpider):
             item['ingredients'] = ingredients
             item['directions'] = directions
             item['link'] = link
-        
-            yield item
+
+            print(item)
+            # yield item
         except Exception as e:
             traceback.print_exc()
         
