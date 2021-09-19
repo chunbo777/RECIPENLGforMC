@@ -81,11 +81,11 @@ class RecipeWithMySqlPipeline:
     def process_item(self, item):
         for k in ['title','ingredients','directions', 'ner_mecab']:
             if item[k] is None:
-                if k == 'title':# 아예 내용이 없는 경우
-                    print(item)
-                    break
-                else:
-                    continue
+                break
+                # if k == 'title':# 아예 내용이 없는 경우
+                #     print(item)
+                # else:
+                #     continue
 
             if isinstance(item[k], str):
                 item[k] = item[k].replace('"','').replace('\\','').strip()
@@ -95,7 +95,7 @@ class RecipeWithMySqlPipeline:
         try:
             self.store_db(item)
         except Exception:
-            traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
+            traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log/{os.path.basename(__file__)}_log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
             print(item['title'])
             print(item['link'])
 
@@ -123,7 +123,7 @@ class RecipeWithMySqlPipeline:
                     try:
                         self.curr.execute(f'INSERT INTO directions (Recipeid, direction) VALUES ("{recipeid}","{splitted_direction}");')
                     except Exception:
-                        traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
+                        traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log/{os.path.basename(__file__)}_log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
         
         for ner_mecab in item['ner_mecab']:
             sql = f'INSERT INTO ner_mecab (Recipeid, ner, pos) VALUES ("{recipeid}","{ner_mecab[0]}","{ner_mecab[1]}");'
