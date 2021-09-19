@@ -129,14 +129,10 @@ dmypy.json
 .pyre/
 
 
-*.h5
+# 20210910
+.h5
 *.csv
-*.json
-*.jar
-
-data/
 datain/
-dataout/
 runs/
 output/
-wandb/
+*.json
