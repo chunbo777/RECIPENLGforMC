@@ -569,7 +569,7 @@ def get_sweep_id(method):
         }
     }
 
-    sweep_id = wandb.sweep(sweep_config, project="cartpole") 
+    sweep_id = wandb.sweep(sweep_config) 
     return sweep_id
 
 
