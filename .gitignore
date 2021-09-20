@@ -133,6 +133,9 @@ dmypy.json
 *.csv
 *.json
 *.jar
+*.bin
+*.tar
+*.tar.gz
 
 data/
 datain/
@@ -140,3 +143,4 @@ dataout/
 runs/
 output/
 wandb/
+preds/
