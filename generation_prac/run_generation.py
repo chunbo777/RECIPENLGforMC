@@ -161,6 +161,7 @@ def main():
         )
         out = out[0, len(context_tokens):].tolist()
         text = tokenizer.decode(out, clean_up_tokenization_spaces=True)
+        text = text.replace('\\u00b0','\u00b0').replace('\\u00bc','\u00bc')
         if "<RECIPE_END>" not in text:
             print(text)
             print("Failed to generate, recipe's too long")
@@ -171,7 +172,7 @@ def main():
         title = "# " + recipe_n_title[1].replace("<TITLE_END>", "") + " #\n"
         markdown = recipe_n_title[0].replace("<INPUT_START>", "## Input ingredients ##\n`").replace("<INPUT_END>", "`\n")
         markdown = markdown.replace("<NEXT_INPUT>", "`\n`").replace("<INGR_START>", "## Ingredients ##\n* ").replace("<NEXT_INGR>", "\n* ").replace("<INGR_END>", "\n")
-        markdown = markdown.replace("<INSTR_START>", "## Instructions ##\n1) ").replace("<NEXT_INSTR>", "\n1) ").replace("<INSTR_END>", "\n")
+        markdown = markdown.replace("<INSTR_START>", "## Instructions ##\n) ").replace("<NEXT_INSTR>", "\n) ").replace("<INSTR_END>", "\n")
         markdown = re.sub("$ +#", "#", markdown)
         markdown = re.sub("( +`|` +)", "`", markdown)
         print(title+markdown)

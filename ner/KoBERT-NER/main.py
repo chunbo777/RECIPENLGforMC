@@ -141,9 +141,11 @@ if __name__ == '__main__':
     parser.add_argument("--train_file", default="train.tsv", type=str, help="Train file")
     parser.add_argument("--test_file", default="test.tsv", type=str, help="Test file")
     parser.add_argument("--label_file", default="label.txt", type=str, help="Slot Label file")
+
     parser.add_argument("--write_pred", default=True, action="store_true", help="Write prediction during evaluation")
 
-    parser.add_argument("--model_type", default="kobert", type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    # parser.add_argument("--model_type", default="kobert", type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    parser.add_argument("--model_type", default="koelectra-base", type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
 
     parser.add_argument('--seed', type=int, default=42, help="random seed for initialization")
     parser.add_argument("--train_batch_size", default=32, type=int, help="Batch size for training.")
