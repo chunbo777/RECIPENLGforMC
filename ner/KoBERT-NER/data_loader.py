@@ -83,14 +83,14 @@ class NaverNerProcessor(object):
         for (i, data) in enumerate(dataset):
             words, labels = data.split('\t')
             words = words.split()
-            labels = labels.split()
+            labels = labels.split()# len(words) == len(labels) ??
             guid = "%s-%s" % (set_type, i)
 
             labels_idx = []
             for label in labels:
                 labels_idx.append(self.labels_lst.index(label) if label in self.labels_lst else self.labels_lst.index("UNK"))
 
-            assert len(words) == len(labels_idx)
+            assert len(words) == len(labels_idx)# ?? 이게 보장이 되려면 공백기준으로 문장을 나누어 나오는 단어 목록의 길이와 label목록의 길이가 동일해야 함
 
             if i % 10000 == 0:
                 logger.info(data)
