@@ -28,21 +28,12 @@ def return_tokenizer_type_and_strip_char(tokenizer: PreTrainedTokenizer):
 
 def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
     if tokenizer:
-        _, strip_char = return_tokenizer_type_and_strip_char(tokenizer)
+        # _, strip_char = return_tokenizer_type_and_strip_char(tokenizer)
+        _, strip_char = 'bert-wp', "##"# pretrained tokenizer type이 이상
 
     label_list = [
-        "B-PS",
-        "I-PS",
-        "B-LC",
-        "I-LC",
-        "B-OG",
-        "I-OG",
-        "B-DT",
-        "I-DT",
-        "B-TI",
-        "I-TI",
-        "B-QT",
-        "I-QT",
+        "B-PS", "I-PS", "B-LC", "I-LC", "B-OG", "I-OG",
+        "B-DT", "I-DT", "B-TI", "I-TI", "B-QT", "I-QT",
         "O",
     ]
     file_path = Path(file_path)
@@ -57,15 +48,15 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
             if line.startswith("##"):  # skip comment
                 continue
             token, tag = line.split("\t")
-            sentence += token
-            if token != " ":
+            sentence += token# sentence에 모은 상태에서 split과 tokenizer를 이용해 token 재생성
+            if token != " ":# 공백은 tagging이 되어 있어도 고려 안함
                 original_clean_labels.append(tag)
 
         if tokenizer:
             # sentence: "안녕 하세요.."
             # original_clean_labels: [안, 녕, 하, 세, 요, ., .]
             # sent_words: [안녕, 하세요..]
-            sent_words = sentence.split(" ")
+            sent_words = sentence.split(" ")#len(''.join(sent_words)) == len(original_clean_labels)
             modi_labels = []
             char_idx = 0
             for word in sent_words:
@@ -78,14 +69,14 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
                 # unk규칙 --> 어절이 통채로 unk로 변환, 단, 기호는 분리
                 contain_unk = True if tokenizer.unk_token in tokenized_word else False
                 for i, token in enumerate(tokenized_word):
-                    token = token.replace(strip_char, "")
+                    token = token.replace(strip_char, "")# 원래 문장에서 추출한 문자만 남음(unk 제외)
                     if not token:
                         continue
-                    modi_labels.append(original_clean_labels[char_idx])
-                    if not contain_unk:
+                    modi_labels.append(original_clean_labels[char_idx])# 두개 이상의 문자가 하나의 token으로 합쳐진경우 첫 문자의 label을 새로이 생성된 token의 label로 배정
+                    if not contain_unk: 
                         char_idx += len(token)
-                if contain_unk:
-                    char_idx += correct_syllable_num
+                if contain_unk:# ㅋㅋ, ㅠㅠ 같은 것들은 unk로 저장
+                    char_idx += correct_syllable_num# = len(word)
         else:
             modi_labels = []
             strip_char = None
@@ -93,8 +84,8 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
         text_a = sentence  # original sentence
         instance = {
             "text_a": text_a,
-            "label": modi_labels,
-            "original_clean_labels": original_clean_labels,
+            "label": modi_labels,#tokenizer의 정보가 반영된 label정보
+            "original_clean_labels": original_clean_labels,#원시 label 정보
         }
         data_list.append(instance)
 

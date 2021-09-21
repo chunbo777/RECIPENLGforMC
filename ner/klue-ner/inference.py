@@ -8,7 +8,8 @@ import torch
 
 from dataset import NerDataset
 from transformers import (AutoModelForTokenClassification, AutoTokenizer,
-                          PreTrainedTokenizer)
+                          PreTrainedTokenizer
+                          , AutoModelForMaskedLM)
 from utils import read_data
 
 KLUE_NER_OUTPUT = "output.csv"  # the name of the output file should be output.csv
@@ -78,7 +79,7 @@ class OutputConvertor(object):
         text = data["text_a"]
 
         original_sentence = text  # 안녕 하세요 ^^
-        subword_preds = [int(x) for x in subword_preds]
+        subword_preds = [int(x) for x in subword_preds]# len(subword_preds) == max_length
         character_preds = [subword_preds[0]]  # [CLS]
         character_preds_idx = 1
 
@@ -167,8 +168,9 @@ def inference(args):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Load model
-    model = load_model(args.model_dir, args.model_tar_file).to(device)
-    if num_gpus > 1:
+    # model = load_model(args.model_dir, args.model_tar_file).to(device)
+    model = AutoModelForMaskedLM.from_pretrained("klue/roberta-large")
+    if num_gpus >= 1:# 기존 >1 에서 수정
         model = torch.nn.DataParallel(model)
     model.eval()
 
@@ -178,7 +180,8 @@ def inference(args):
         if torch.cuda.is_available()
         else {}
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
+    # tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
+    tokenizer = AutoTokenizer.from_pretrained("klue/roberta-large")
 
     # Build dataloader
     test_data, label_list, strip_char = read_data(
@@ -186,8 +189,8 @@ def inference(args):
     )
     dataset = NerDataset(
         tokenizer,
-        test_data,
-        label_list,
+        test_data,# text_a, label, 원시 label
+        label_list,# "B-PS", "I-PS", "B-LC"...
         args.max_length,
         args.batch_size,
         shuffle=False,
@@ -232,7 +235,7 @@ def inference(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-
+    
     parser.add_argument(
         "--batch_size",
         type=int,
@@ -241,7 +244,8 @@ if __name__ == "__main__":
         help="input batch size for inference (default: 64)",
     )
     parser.add_argument(
-        "--data_dir", type=str, default=os.environ.get("SM_CHANNEL_EVAL", "/data")
+        # "--data_dir", type=str, default=os.environ.get("SM_CHANNEL_EVAL", "/data")
+        "--data_dir", type=str, default=f"{os.path.dirname(__file__)}/data/klue-ner-v1.1"
     )
     parser.add_argument(
         "--model_dir", type=str, default='./model'
@@ -261,7 +265,8 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--test_filename",
-        default="klue-ner-v1.1_test.tsv",
+        # default="klue-ner-v1.1_test.tsv",
+        default="klue-ner-v1.1_dev_sample_10.tsv",
         type=str,
         help="Name of the test file (default: klue-ner-v1.1_test.tsv)",
     )
@@ -273,4 +278,5 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    
     inference(args)
