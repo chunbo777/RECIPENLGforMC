@@ -83,14 +83,14 @@ class NaverNerProcessor(object):
         for (i, data) in enumerate(dataset):
             words, labels = data.split('\t')
             words = words.split()
-            labels = labels.split()
+            labels = labels.split()# len(words) == len(labels) ??
             guid = "%s-%s" % (set_type, i)
 
             labels_idx = []
             for label in labels:
                 labels_idx.append(self.labels_lst.index(label) if label in self.labels_lst else self.labels_lst.index("UNK"))
 
-            assert len(words) == len(labels_idx)
+            assert len(words) == len(labels_idx)# ?? 이게 보장이 되려면 공백기준으로 문장을 나누어 나오는 단어 목록의 길이와 label목록의 길이가 동일해야 함
 
             if i % 10000 == 0:
                 logger.info(data)
@@ -145,6 +145,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
                 word_tokens = [unk_token]  # For handling the bad-encoded word
             tokens.extend(word_tokens)
             # Use the real label id for the first token of the word, and padding ids for the remaining tokens
+            # tokenize를 통해 새롭게 생성된 token에 상응하는 만큼 pad_label이 추가
             label_ids.extend([int(slot_label)] + [pad_token_label_id] * (len(word_tokens) - 1))
 
         # Account for [CLS] and [SEP]
