@@ -88,6 +88,7 @@ class NaverNerProcessor(object):
 
             labels_idx = []
             for label in labels:
+                # 
                 labels_idx.append(self.labels_lst.index(label) if label in self.labels_lst else self.labels_lst.index("UNK"))
 
             assert len(words) == len(labels_idx)# ?? 이게 보장이 되려면 공백기준으로 문장을 나누어 나오는 단어 목록의 길이와 label목록의 길이가 동일해야 함
@@ -145,8 +146,16 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
                 word_tokens = [unk_token]  # For handling the bad-encoded word
             tokens.extend(word_tokens)
             # Use the real label id for the first token of the word, and padding ids for the remaining tokens
-            # tokenize를 통해 새롭게 생성된 token에 상응하는 만큼 pad_label이 추가
+            # tokenize를 통해 새롭게 생성된 token에 상응하는 만큼 pad_label이 추가? padding이 아니라 앞선 token이 B or I 일경우 연속값은 I이고  O일경우 O로 배정되어야 하는거 아닌가?
             label_ids.extend([int(slot_label)] + [pad_token_label_id] * (len(word_tokens) - 1))
+            # if int(slot_label) ==0 :# UNK
+            #     label_ids.extend([int(slot_label)] + [pad_token_label_id] * (len(word_tokens) - 1))
+            # elif int(slot_label) == 1 :# O
+            #     label_ids.extend([int(slot_label)] + [0] * (len(word_tokens) - 1))
+            # elif int(slot_label) % 2 == 0 :# B
+            #     label_ids.extend([int(slot_label)] + [int(slot_label)+1] * (len(word_tokens) - 1))
+            # elif int(slot_label) % 2 == 1 :# I
+            #     label_ids.extend([int(slot_label)] + [int(slot_label)] * (len(word_tokens) - 1))
 
         # Account for [CLS] and [SEP]
         special_tokens_count = 2
