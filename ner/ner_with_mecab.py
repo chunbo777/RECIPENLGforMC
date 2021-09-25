@@ -19,7 +19,7 @@ class RecipeWithMySqlPipeline:
         if os.sys.platform =='win32':
             nameserver = 'localhost'
         elif os.sys.platform == 'linux':
-            nameserver = '172.20.224.1'# /etc/resolv.conf
+            nameserver = '172.31.16.1'# /etc/resolv.conf
             
 
         mydb = mysql.connector.connect(
@@ -130,6 +130,13 @@ class RecipeWithMySqlPipeline:
             self.curr.execute(sql)
 
         self.conn.commit()
+    def automated_raw_tagging_item(self, target):
+        sql = f'''select ner, pos from ner_set;'''
+        self.curr.execute(sql)
+        raw_ner_set = self.curr.fetchall()
+        return raw_ner_set
+            
+
 
 # with open(f'/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/final.json', encoding='utf8') as f:
 #     jsonString = '['+f.read().replace('}{','},{')+']'
@@ -143,12 +150,86 @@ path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 
 me = Mecab()
 sql = RecipeWithMySqlPipeline()
+# with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
+#     jsondata = json.load(fp=f)
 
-with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
-    jsondata = json.load(fp=f)
+#     for data in tqdm(jsondata):
+#         data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
+#         sql.process_item(data)
+def process_text(repl_info, target):
+    modified_target = []
+    for i, repl in enumerate(repl_info['repl']):
+        if i == 0:
+            tmp =  target[:repl_info['loc'][i][0]]
+            modified_target.extend([tmp, repl])
+        elif i < len(repl_info['repl'])-1 and i >0:
+            tmp = target[repl_info['loc'][i-1][1]: repl_info['loc'][i][0]]
+            modified_target.extend([tmp, repl])
+        elif i == len(repl_info['repl'])-1:
+            tmp1 =  target[repl_info['loc'][i-1][1]: repl_info['loc'][i][0]]
+            tmp2 =  target[repl_info['loc'][i][1]:]
+            modified_target.extend([tmp1, repl,tmp2])
+    modified_target = ' '.join(modified_target)
+    return modified_target
 
-    for data in tqdm(jsondata):
-        data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
-        sql.process_item(data)
 
-    
+import re
+import pandas as pd
+import numpy as np
+from tqdm import tqdm
+path = '/home/dasomoh88/RECIPENLGforMC/ner/data/'
+with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
+
+    df = pd.read_csv(f, encoding='utf8')
+    data = df.to_numpy()
+
+    tagged_data = []
+    for row in tqdm(data):
+        target = f' {row[0]} '
+        unit = row[1].split('@#') if isinstance(row[1], str) else []
+        qty = row[2].split('@#') if isinstance(row[2], str) else []
+        
+        regex_For_Qty = f'([\d]*[,|/|.]*[\d]*|({"|".join(qty)})*)'
+        regex_For_Unit = f'(큰술|작은술|적량|약간{"|"+"|".join(unit)})'
+        regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
+
+        repl_info= {'loc':[], 'repl':[]}
+        for found in re.finditer(regex, target):
+            if found is None or found.group().strip()=='':
+                continue
+            else:
+                matched = found.group().strip()
+            repl = ''
+            for k, regex_ in {'QTY':regex_For_Qty, 'UNIT':regex_For_Unit}.items():
+                matched_ = re.search(regex_, matched)
+                if matched_ is not None and matched_.group().strip() !='':
+                    matched__ = matched_.group().strip()
+                    if matched__ !='':
+                        repl += f'<{matched__}:{k}>'# 중복 대체 연산 방지
+            repl_info['loc'].append(found.span())
+            repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
+
+        modified_target = target if len(repl_info['repl']) ==0 else ' '+process_text(repl_info, target)
+
+        ingr = row[3].split('@#') if isinstance(row[3], str) else []
+        regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^(:)])'
+        repl_info= {'loc':[], 'repl':[]}
+        for found in re.finditer(regex_For_Ingr, modified_target):
+            if found is None or found.group().strip()=='':
+                continue
+            else:
+                matched = re.sub('[^\w]', '', found.group())
+                if matched !='':
+                    repl = f'<{matched}:INGR>'
+                    repl_info['loc'].append(found.span())
+                    repl_info['repl'].append(repl)
+
+        tagged_target = modified_target if len(repl_info['repl']) ==0 else process_text(repl_info, modified_target)
+        if tagged_target == '':
+            print(modified_target)
+            print(tagged_target)
+        else:        
+            tagged_data.append([row[-1],tagged_target])
+
+pd.DataFrame(tagged_data).to_csv(open(f'{path}0926_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+
