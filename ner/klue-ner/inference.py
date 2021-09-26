@@ -9,7 +9,9 @@ import torch
 from dataset import NerDataset
 from transformers import (AutoModelForTokenClassification, AutoTokenizer,
                           PreTrainedTokenizer
-                          , AutoModelForMaskedLM)
+                          , AutoModelForMaskedLM
+                          , ElectraConfig, ElectraForTokenClassification, ElectraTokenizer
+                          )
 from utils import read_data
 
 KLUE_NER_OUTPUT = "output.csv"  # the name of the output file should be output.csv
@@ -169,10 +171,8 @@ def inference(args):
 
     # Load model
     # model = load_model(args.model_dir, args.model_tar_file).to(device)
-    model = AutoModelForMaskedLM.from_pretrained("klue/roberta-large")
-    if num_gpus >= 1:# 기존 >1 에서 수정
-        model = torch.nn.DataParallel(model)
-    model.eval()
+    # model = AutoModelForMaskedLM.from_pretrained("klue/roberta-large")
+
 
     # Load tokenzier
     kwargs = (
@@ -181,12 +181,15 @@ def inference(args):
         else {}
     )
     # tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
-    tokenizer = AutoTokenizer.from_pretrained("klue/roberta-large")
+    # tokenizer = AutoTokenizer.from_pretrained("klue/roberta-large")
+    tokenizer = AutoTokenizer.from_pretrained("monologg/koelectra-base-v3-discriminator")
 
     # Build dataloader
     test_data, label_list, strip_char = read_data(
         os.path.join(args.data_dir, args.test_filename), tokenizer
     )
+
+
     dataset = NerDataset(
         tokenizer,
         test_data,# text_a, label, 원시 label
@@ -197,6 +200,18 @@ def inference(args):
         **kwargs
     )
     dataloader = dataset.loader
+
+    model_path = "monologg/koelectra-base-v3-discriminator"
+    config = ElectraConfig.from_pretrained(model_path
+        , num_labels= len(label_list)
+        # , id2label={str(i): label for i, label in enumerate(label_list)}
+        , label2id=dataset.label2idx
+    )
+    model = ElectraForTokenClassification.from_pretrained(model_path, config=config)
+
+    if num_gpus >= 1:# 기존 >1 에서 수정
+        model = torch.nn.DataParallel(model)
+    model.eval()
 
     # Run Inference
     preds = []
@@ -248,12 +263,14 @@ if __name__ == "__main__":
         "--data_dir", type=str, default=f"{os.path.dirname(__file__)}/data/klue-ner-v1.1"
     )
     parser.add_argument(
-        "--model_dir", type=str, default='./model'
+        # "--model_dir", type=str, default='./model'
+        "--model_dir", type=str, default=f"{os.path.dirname(__file__)}/model"
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        default=os.environ.get("SM_OUTPUT_DATA_DIR", "/output"),
+        # default=os.environ.get("SM_OUTPUT_DATA_DIR", "/output"),
+        default=f"{os.path.dirname(__file__)}/output",
     )
     parser.add_argument(
         "--model_tar_file",

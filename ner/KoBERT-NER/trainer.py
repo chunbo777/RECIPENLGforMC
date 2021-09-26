@@ -200,6 +200,11 @@ class Trainer(object):
                         f.write("{} {} {}\n".format(t, tl, pl))
                     f.write("\n")
 
+            # 20210924
+            with open(os.path.join(self.args.pred_dir, "report_{}.txt".format(step)), "w", encoding="utf-8") as f:
+                f.write(show_report(out_label_list, preds_list))
+                f.write("\n")
+
         result = compute_metrics(out_label_list, preds_list)
         results.update(result)
 
@@ -208,6 +213,7 @@ class Trainer(object):
             logger.info("  %s = %s", key, str(results[key]))
         logger.info("\n" + show_report(out_label_list, preds_list))  # Get the report for each tag result
 
+        
         return results
 
     def save_model(self):
