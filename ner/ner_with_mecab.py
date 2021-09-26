@@ -148,14 +148,15 @@ path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 # with open(f'{path}recipes_in_korean.json', mode='w', encoding='utf8') as f:
 #     json.dump(jsondata, fp=f)
 
-me = Mecab()
-sql = RecipeWithMySqlPipeline()
+# DB에 데이터 저장
+# me = Mecab()
+# sql = RecipeWithMySqlPipeline()
 # with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
 #     jsondata = json.load(fp=f)
-
 #     for data in tqdm(jsondata):
 #         data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
 #         sql.process_item(data)
+
 def process_text(repl_info, target):
     modified_target = []
     for i, repl in enumerate(repl_info['repl']):
@@ -175,61 +176,96 @@ def process_text(repl_info, target):
 
 import re
 import pandas as pd
-import numpy as np
+from datetime import date
 from tqdm import tqdm
-path = '/home/dasomoh88/RECIPENLGforMC/ner/data/'
-with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
+def get_tagged_data(path, file_name):
+    # with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
+    with open(f'{path}{file_name}', mode='r', encoding='utf8') as f:
 
-    df = pd.read_csv(f, encoding='utf8')
-    data = df.to_numpy()
+        df = pd.read_csv(f, encoding='utf8')
+        data = df.to_numpy()
 
-    tagged_data = []
-    for row in tqdm(data):
-        target = f' {row[0]} '
-        unit = row[1].split('@#') if isinstance(row[1], str) else []
-        qty = row[2].split('@#') if isinstance(row[2], str) else []
-        
-        regex_For_Qty = f'([\d]*[,|/|.]*[\d]*|({"|".join(qty)})*)'
-        regex_For_Unit = f'(큰술|작은술|적량|약간{"|"+"|".join(unit)})'
-        regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
+        tagged_data = []
+        for row in tqdm(data):
+            target = f' {row[0]} '
+            unit = row[1].split('@#') if isinstance(row[1], str) else []
+            qty = row[2].split('@#') if isinstance(row[2], str) else []
+            
+            regex_For_Qty = f'([\d]*[,|/|.]*[\d]*|({"|".join(qty)})*)'
+            regex_For_Unit = f'(큰술|작은술|적량|약간{"|"+"|".join(unit)})'
+            regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
 
-        repl_info= {'loc':[], 'repl':[]}
-        for found in re.finditer(regex, target):
-            if found is None or found.group().strip()=='':
-                continue
-            else:
-                matched = found.group().strip()
-            repl = ''
-            for k, regex_ in {'QTY':regex_For_Qty, 'UNIT':regex_For_Unit}.items():
-                matched_ = re.search(regex_, matched)
-                if matched_ is not None and matched_.group().strip() !='':
-                    matched__ = matched_.group().strip()
-                    if matched__ !='':
-                        repl += f'<{matched__}:{k}>'# 중복 대체 연산 방지
-            repl_info['loc'].append(found.span())
-            repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
+            repl_info= {'loc':[], 'repl':[]}
+            for found in re.finditer(regex, target):
+                if found is None or found.group().strip()=='':
+                    continue
+                else:
+                    matched = found.group().strip()
+                repl = ''
+                for k, regex_ in {'QTY':regex_For_Qty, 'UNIT':regex_For_Unit}.items():
+                    matched_ = re.search(regex_, matched)
+                    if matched_ is not None and matched_.group().strip() !='':
+                        matched__ = matched_.group().strip()
+                        if matched__ !='':
+                            repl += f'<{matched__}:{k}>'# 중복 대체 연산 방지
+                repl_info['loc'].append(found.span())
+                repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
 
-        modified_target = target if len(repl_info['repl']) ==0 else ' '+process_text(repl_info, target)
+            modified_target = target if len(repl_info['repl']) ==0 else ' '+process_text(repl_info, target)
 
-        ingr = row[3].split('@#') if isinstance(row[3], str) else []
-        regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^(:)])'
-        repl_info= {'loc':[], 'repl':[]}
-        for found in re.finditer(regex_For_Ingr, modified_target):
-            if found is None or found.group().strip()=='':
-                continue
-            else:
-                matched = re.sub('[^\w]', '', found.group())
-                if matched !='':
-                    repl = f'<{matched}:INGR>'
-                    repl_info['loc'].append(found.span())
-                    repl_info['repl'].append(repl)
+            ingr = row[3].split('@#') if isinstance(row[3], str) else []
+            regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^(:)])'
+            repl_info= {'loc':[], 'repl':[]}
+            for found in re.finditer(regex_For_Ingr, modified_target):
+                if found is None or found.group().strip()=='':
+                    continue
+                else:
+                    matched = re.sub('[^\w]', '', found.group())
+                    if matched !='':
+                        repl = f'<{matched}:INGR>'
+                        repl_info['loc'].append(found.span())
+                        repl_info['repl'].append(repl)
 
-        tagged_target = modified_target if len(repl_info['repl']) ==0 else process_text(repl_info, modified_target)
-        if tagged_target == '':
-            print(modified_target)
-            print(tagged_target)
-        else:        
-            tagged_data.append([row[-1],tagged_target.replace('@#','')])
+            tagged_target = modified_target if len(repl_info['repl']) ==0 else process_text(repl_info, modified_target)
+            if tagged_target == '':
+                print('row ############################')
+                print(row)
+                print('modified_target ############################')
+                print(modified_target)
+                print('tagged_target ############################')
+                print(tagged_target)
+                print('############################')
+            else:        
+                tagged_data.append([row[-1],row[0],tagged_target.replace('@#','')])
 
-pd.DataFrame(tagged_data).to_csv(open(f'{path}0926_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    pd.DataFrame(tagged_data).to_csv(open(f'{path}{date.today().strftime("%m%d")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
 
+path = f'{os.path.dirname(__file__)}/data/'
+# get_tagged_data(path, '0925_ner_298452_1.csv')
+
+df_to_bio = pd.read_csv(f'{path}0926_tagged.csv', encoding='utf8')
+
+data = df_to_bio.to_numpy()
+for row in data:
+    id = row[0]
+    target = row[1]
+    entities = ['INGR','QTY','UNIT']
+    regex = f'[<][\wㄱ-힣]+:({"|".join(entities)})[>]'
+    repl_info = {'loc':[], 'repl':[]}
+
+    for found in re.finditer(regex, target):
+        if found is None or found.group().strip('<>')=='':
+            continue
+        else:
+            matched = found.group().strip('<>').split(':')# 0: 요소, 1: entity
+            chars = list(matched[0])
+            labels = []
+            for i in range(len(chars)):
+                if i ==0:
+                    labels.append(f'B-{matched[1]}')
+                else:
+                    labels.append(f'I-{matched[1]}')
+            repl_info['repl'].append([chars, labels])    
+            repl_info['loc'].append(found.span)
+
+    ## 이제 모은 값들로 KLUE 형식에 맞게 txt 파일로 저장
