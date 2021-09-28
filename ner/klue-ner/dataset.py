@@ -4,7 +4,6 @@ import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import PreTrainedTokenizer
 
-
 class CollateNer(object):
     def __init__(
         self, tokenizer: PreTrainedTokenizer, label2idx: Dict[str, int], max_length: int
@@ -13,7 +12,8 @@ class CollateNer(object):
         self.label2idx = label2idx
         self.max_length = max_length
 
-    def __call__(self, input_examples):#sample 파일을 출력할때는 10개만
+    # Dataset subclass의 getItem 함수 실행이후 그 결과(batch)를 넘겨받음
+    def __call__(self, input_examples):
         input_texts, input_labels_str = [], []
         for input_example in input_examples:
             text, label_strs = input_example#원문과 tokenizer 정보가 반영된 label 정보
@@ -30,21 +30,24 @@ class CollateNer(object):
             return_token_type_ids=True,
             return_attention_mask=True,
         )
-        input_ids = encoded_texts["input_ids"]#torch.Size([10, 510])<< (len(input_texts), self.max_length)
-        token_type_ids = encoded_texts["token_type_ids"]#torch.Size([10, 510])
-        attention_mask = encoded_texts["attention_mask"]#torch.Size([10, 510])
+        #torch.Size([len(input_examples), self.max_length])
+        # input_ids.count_nonzero() == attention_mask.sum() == attention_mask.count_nonzero()
+        input_ids = encoded_texts["input_ids"]
+        attention_mask = encoded_texts["attention_mask"] 
+
+        token_type_ids = encoded_texts["token_type_ids"] # token_type_ids.sum() >> tensor(0)
 
         len_input = input_ids.size(1)# == self.max_length
         input_labels = []
-        for input_label_str in input_labels_str:
-            input_label_str = (
+        for input_label_str in input_labels_str:#len(input_labels_str)은 padding과 special token adding 전 tokens의 길이와 동일
+            input_label_str = (#<CLS>, <...>, ...<...>,<SEP>, <PAD>, <PAD>..., <PAD>
                 ["O"] + input_label_str + (len_input - len(input_label_str) - 1) * ["O"]
             )# input 형식에 맞춰 Out label 추가(아마 padding token에 대응하는 값일듯)
             input_label = [self.label2idx[x] for x in input_label_str]
             input_label = torch.tensor(input_label).long()
             input_labels.append(input_label)
 
-        input_labels = torch.stack(input_labels)# == torch.Size([10, 510])
+        input_labels = torch.stack(input_labels)# == torch.Size([len(input_examples), self.max_length])
         return input_ids, token_type_ids, attention_mask, input_labels
 
 

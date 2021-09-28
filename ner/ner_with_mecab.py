@@ -323,7 +323,7 @@ def get_BIO_data(path, data):
         modified_data.append([row[0], row[1], row[-1], [modified_chars, modified_labels]])
 
     # 임시
-    # modified_data = modified_data[:1000]
+    modified_data = modified_data[:1000]
 
     with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.json', 'w', encoding='utf8') as f:
         result = pd.DataFrame(modified_data).to_json(orient="values")
@@ -342,6 +342,7 @@ def get_BIO_data(path, data):
                     text = '\n'.join(['\t'.join(i) for i in zip(el[0], el[1])])
                     f.write(text)
                 elif isinstance(el, str):
+                    el = el.replace('\n','')
                     f.write(f'##{el}')
                 elif isinstance(el, int):
                     f.write(f'##{str(el)}')

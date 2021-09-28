@@ -49,7 +49,11 @@ class Trainer(object):
     # def train(self):
     def train(self, wandb=None):
         train_sampler = RandomSampler(self.train_dataset)
-        train_dataloader = DataLoader(self.train_dataset, sampler=train_sampler, batch_size=self.args.train_batch_size)
+        train_dataloader = DataLoader(
+            self.train_dataset
+            , sampler=train_sampler
+            , batch_size=self.args.train_batch_size
+        )
 
         if self.args.max_steps > 0:
             t_total = self.args.max_steps
