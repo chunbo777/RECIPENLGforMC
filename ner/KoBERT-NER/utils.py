@@ -44,7 +44,7 @@ MODEL_PATH_MAP = {
 }
 
 
-def get_test_texts(args):
+def get_test_texts(args, tokenizer):
     texts = []
     with open(os.path.join(args.data_dir, args.test_file), 'r', encoding='utf-8') as f:
         # for line in f:
@@ -65,8 +65,16 @@ def get_test_texts(args):
                     continue 
                 token, _ = line.split("\t")
                 chars.append(token)
-            text = ''.join(chars)
-            texts.append(text)
+            sent_words = ''.join(chars).split(" ")
+            tokens = []
+            for word in sent_words:
+                tokenized_word = tokenizer.tokenize(word)
+                for i, token in enumerate(tokenized_word):
+                    token_repl = token.replace('##', "")# 원래 문장에서 추출한 문자만 남음(unk 제외)
+                    if not token_repl:
+                        continue
+                    tokens.append(token)# '##'표시가 없으면 나중에 token을 id로 converting 할때 오류 ex) UNK token이 발생
+            texts.append(tokens)
     return texts
 
 

@@ -15,11 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-    def __init__(self, args, train_dataset=None, dev_dataset=None, test_dataset=None):
+    def __init__(self, args, train_dataset=None, dev_dataset=None, test_dataset=None, tokenizer = None):
         self.args = args
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
         self.test_dataset = test_dataset
+
+        self.tokenizer = tokenizer
 
         self.label_lst = get_labels(args)
         self.num_labels = len(self.label_lst)
@@ -41,7 +43,7 @@ class Trainer(object):
 
         self.test_texts = None
         if args.write_pred:
-            self.test_texts = get_test_texts(args)
+            self.test_texts = get_test_texts(args, tokenizer)
             # Empty the original prediction files
             if os.path.exists(args.pred_dir):
                 shutil.rmtree(args.pred_dir)
@@ -201,7 +203,7 @@ class Trainer(object):
             with open(os.path.join(self.args.pred_dir, "pred_{}.txt".format(step)), "w", encoding="utf-8") as f:
                 for text, true_label, pred_label in zip(self.test_texts, out_label_list, preds_list):
                     for t, tl, pl in zip(text, true_label, pred_label):
-                        f.write("{} {} {}\n".format(t, tl, pl))
+                        f.write("{}\t{}\t{}\n".format(t, tl, pl))
                     f.write("\n")
 
             # 20210924
