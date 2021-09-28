@@ -15,11 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 class Trainer(object):
-    def __init__(self, args, train_dataset=None, dev_dataset=None, test_dataset=None):
+    def __init__(self, args, train_dataset=None, dev_dataset=None, test_dataset=None, tokenizer = None):
         self.args = args
         self.train_dataset = train_dataset
         self.dev_dataset = dev_dataset
         self.test_dataset = test_dataset
+
+        self.tokenizer = tokenizer
 
         self.label_lst = get_labels(args)
         self.num_labels = len(self.label_lst)
@@ -41,7 +43,7 @@ class Trainer(object):
 
         self.test_texts = None
         if args.write_pred:
-            self.test_texts = get_test_texts(args)
+            self.test_texts = get_test_texts(args, tokenizer)
             # Empty the original prediction files
             if os.path.exists(args.pred_dir):
                 shutil.rmtree(args.pred_dir)
@@ -158,11 +160,11 @@ class Trainer(object):
         for batch in tqdm(eval_dataloader, desc="Evaluating"):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
-                inputs = {'input_ids': batch[0],
-                          'attention_mask': batch[1],
-                          'labels': batch[3]}
+                inputs = {'input_ids': batch[0],# eval batchsize, max_sequence
+                          'attention_mask': batch[1],# eval batchsize, max_sequence
+                          'labels': batch[3]}## eval batchsize, max_sequence
                 if self.args.model_type != 'distilkobert':
-                    inputs['token_type_ids'] = batch[2]
+                    inputs['token_type_ids'] = batch[2]# eval batchsize, max_sequence
                 outputs = self.model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
 
@@ -183,7 +185,7 @@ class Trainer(object):
         }
 
         # Slot result
-        preds = np.argmax(preds, axis=2)
+        preds = np.argmax(preds, axis=2)# tag 중 가장 가망이 높은것 출력
         slot_label_map = {i: label for i, label in enumerate(self.label_lst)}
         out_label_list = [[] for _ in range(out_label_ids.shape[0])]
         preds_list = [[] for _ in range(out_label_ids.shape[0])]
@@ -201,7 +203,7 @@ class Trainer(object):
             with open(os.path.join(self.args.pred_dir, "pred_{}.txt".format(step)), "w", encoding="utf-8") as f:
                 for text, true_label, pred_label in zip(self.test_texts, out_label_list, preds_list):
                     for t, tl, pl in zip(text, true_label, pred_label):
-                        f.write("{} {} {}\n".format(t, tl, pl))
+                        f.write("{}\t{}\t{}\n".format(t, tl, pl))
                     f.write("\n")
 
             # 20210924

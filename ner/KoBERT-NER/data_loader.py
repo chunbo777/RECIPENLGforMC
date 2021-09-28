@@ -168,7 +168,7 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
 
         # 20210928
         # 공백은 tagging이 되어 있어도 고려 안함
-        original_clean_labels =  [example.labels[i] for i, char in enumerate(example.words) if char !=' ']  # clean labels (bert clean func)
+        original_clean_labels =  [example.labels[i] for i, char in enumerate(example.words) if char.strip() !='']  # clean labels (bert clean func)
         sentence = ''.join(example.words)# sentence에 모은 상태에서 split과 tokenizer를 이용해 token 재생성
         # sentence: "안녕 하세요.."
         # original_clean_labels: [안, 녕, 하, 세, 요, ., .]
@@ -190,6 +190,9 @@ def convert_examples_to_features(examples, max_seq_len, tokenizer,
                 token_repl = token.replace('##', "")# 원래 문장에서 추출한 문자만 남음(unk 제외)
                 if not token_repl:
                     continue
+
+                # if token in ['<','양념']:
+                #     print(token)
                 # 두개 이상의 문자가 하나의 token으로 합쳐진경우 첫 문자의 label을 새로이 생성된 token의 label로 배정
                 tokens.append(token)# '##'표시가 없으면 나중에 token을 id로 converting 할때 오류 ex) UNK token이 발생
                 modi_labels.append(original_clean_labels[char_idx])
