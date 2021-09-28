@@ -6,6 +6,8 @@ import torch
 import numpy as np
 from seqeval.metrics import precision_score, recall_score, f1_score, classification_report
 
+import tqdm
+
 from transformers import (
     BertConfig,
     DistilBertConfig,
@@ -53,7 +55,7 @@ def get_test_texts(args, tokenizer):
         #     texts.append(text)
         raw_text = f.read().strip()
         raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)
-        for data in raw_docs:
+        for data in tqdm(raw_docs):
             chars = []
             for line in data.split("\n"):
                 if line.startswith("##"):  # skip comment
