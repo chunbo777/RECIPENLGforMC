@@ -8,6 +8,9 @@ from torch.utils.data import TensorDataset
 
 from utils import get_labels
 
+# 20210927
+import re
+
 logger = logging.getLogger(__name__)
 
 
@@ -76,6 +79,9 @@ class NaverNerProcessor(object):
             for line in f:
                 lines.append(line.strip())
             return lines
+            raw_text = f.read().strip()
+            raw_docs = re.split(r"\n\t?\n", raw_text)
+            return raw_docs
 
     def _create_examples(self, dataset, set_type):
         """Creates examples for the training and dev sets."""
@@ -112,6 +118,7 @@ class NaverNerProcessor(object):
             file_to_read = self.args.test_file
 
         logger.info("LOOKING AT {}".format(os.path.join(self.args.data_dir, file_to_read)))
+        # return self._create_examples(self._read_file(os.path.join(self.args.data_dir, file_to_read)), mode)
         return self._create_examples(self._read_file(os.path.join(self.args.data_dir, file_to_read)), mode)
 
 
