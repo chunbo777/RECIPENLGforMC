@@ -249,8 +249,8 @@ def get_tagged_data(path, file_name):
                 tagged_data.append([row[-1],row[0],tagged_target.replace('@#','')])
 
     # pd.DataFrame(tagged_data).to_csv(open(f'{path}{date.today().strftime("%m%d")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
-    pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H%M")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
-    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H%M")}_tagged.csv')
+    pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv')
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, '0925_ner_298452_1.csv')
 
@@ -322,35 +322,36 @@ def get_BIO_data(path, data):
         assert len(modified_chars) == len(modified_labels)
         modified_data.append([row[0], row[1], row[-1], [modified_chars, modified_labels]])
 
-    # 임시
-    modified_data = modified_data[:1000]
+    # # 임시
+    train = modified_data[:int(len(modified_data)*0.5)]
+    val = modified_data[int(len(modified_data)*0.5):int(len(modified_data)*0.8)]
+    test = modified_data[int(len(modified_data)*0.8):]
+    data = {'train':train, 'val':val, 'test':test}
+    # with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.json', 'w', encoding='utf8') as f:
+    #     result = pd.DataFrame(modified_data).to_json(orient="values")
+    #     parsed = json.loads(result)
+    #     jsonData = json.dumps(parsed, indent=4, ensure_ascii=False)
+    #     f.write(jsonData)
+    # print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.json')
 
-    with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.json', 'w', encoding='utf8') as f:
-        result = pd.DataFrame(modified_data).to_json(orient="values")
-        parsed = json.loads(result)
-        jsonData = json.dumps(parsed, indent=4, ensure_ascii=False)
-        f.write(jsonData)
-    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.json')
-    # with open(f'/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/final.json', encoding='utf8') as f:
-    #     jsondata = json.loads(f.read())
-
-    with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.tsv', mode='a', encoding='utf8') as f:
-        for row in tqdm(modified_data):
-            for el in row:
-                f.write(f'\n')
-                if isinstance(el, list):
-                    text = '\n'.join(['\t'.join(i) for i in zip(el[0], el[1])])
-                    f.write(text)
-                elif isinstance(el, str):
-                    el = el.replace('\n','')
-                    f.write(f'##{el}')
-                elif isinstance(el, int):
-                    f.write(f'##{str(el)}')
-    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.tsv')
+    for k, v in data.items():
+        with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv', mode='a', encoding='utf8') as f:
+            for row in tqdm(v):
+                for el in row:
+                    f.write(f'\n')
+                    if isinstance(el, list):
+                        text = '\n'.join(['\t'.join(i) for i in zip(el[0], el[1])])
+                        f.write(text)
+                    elif isinstance(el, str):
+                        el = el.replace('\n','')
+                        f.write(f'##{el}')
+                    elif isinstance(el, int):
+                        f.write(f'##{str(el)}')
+        print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv')
 
 path = f'{os.path.dirname(__file__)}/data/'
-# get_tagged_data(path, '0925_ner_298452_1.csv')
-df_to_bio = pd.read_csv(f'{path}2109271703_tagged.csv', encoding='utf8')
+# get_tagged_data(path, '0928_train_data_for_NER.csv')
+df_to_bio = pd.read_csv(f'{path}21092820_tagged.csv', encoding='utf8')
 data = df_to_bio.to_numpy() 
 get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 
