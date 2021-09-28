@@ -188,11 +188,11 @@ def get_tagged_data(path, file_name):
         tagged_data = []
         for row in tqdm(data):
             target = f' {row[0]} '
-            unit = row[1].split('@#') if isinstance(row[1], str) else []
+            unit = [u if u not in ['장'] else f'{u}' for u in row[1].split('@#') ] if isinstance(row[1], str) else []
             qty = row[2].split('@#') if isinstance(row[2], str) else []
             
-            regex_For_Qty = f'([\d]*[,|/|.]*[\d]*|({"|".join(qty)})*)'
-            regex_For_Unit = f'(큰술|작은술|적량|약간{"|"+"|".join(unit)})'
+            regex_For_Qty = f'([\d\s]+[,|/|.]*[\d]*|({"|".join(qty)})+)'
+            regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'
             regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
 
             repl_info= {'loc':[], 'repl':[]}
@@ -208,13 +208,23 @@ def get_tagged_data(path, file_name):
                         matched__ = matched_.group().strip()
                         if matched__ !='':
                             repl += f'<{matched__}:{k}>'# 중복 대체 연산 방지
-                repl_info['loc'].append(found.span())
+                repl_info['loc'].append(found.span())#국간장 = 국간+장
                 repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
 
             modified_target = target if len(repl_info['repl']) ==0 else ' '+process_text(repl_info, target)
 
             ingr = row[3].split('@#') if isinstance(row[3], str) else []
-            regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^(:)])'
+            ingr = [i if i not in ['파', '마늘', '생강'] else f'(다진\s|)*{i}' for i in ingr]
+            ingr = [i if i not in ['고추'] else f'(붉은\s|풋\s)*{i}' for i in ingr]
+            ingr = [i if i not in ['미역', '쇠미역', '문어'] else f'(마른\s|)*{i}' for i in ingr]
+            # if '찹쌀' in ingr:
+            #     print(ingr)
+            ingr = [i if i not in ['전분가', '고추가', '콩가'] else f'{i}(루\s|)*' for i in ingr]
+            ingr = [i if i not in ['찹쌀'] else f'{i}(가루\s|)*' for i in ingr]
+            ingr = [i if i not in ['토끼'] else f'{i}(고기\s|)*' for i in ingr]
+            ingr = [i for i in ingr if i not in ['적량']]# 감성돔 추가필요
+            regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^:])'
+            
             repl_info= {'loc':[], 'repl':[]}
             for found in re.finditer(regex_For_Ingr, modified_target):
                 if found is None or found.group().strip()=='':
@@ -238,34 +248,108 @@ def get_tagged_data(path, file_name):
             else:        
                 tagged_data.append([row[-1],row[0],tagged_target.replace('@#','')])
 
-    pd.DataFrame(tagged_data).to_csv(open(f'{path}{date.today().strftime("%m%d")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    # pd.DataFrame(tagged_data).to_csv(open(f'{path}{date.today().strftime("%m%d")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H%M")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H%M")}_tagged.csv')
+# path = f'{os.path.dirname(__file__)}/data/'
+# get_tagged_data(path, '0925_ner_298452_1.csv')
+
+
+def get_BIO_data(path, data):
+    modified_data = []
+    for row in tqdm(data):
+        target = row[-1]
+        entities = ['INGR','QTY','UNIT']
+        regex = f'[<]([\wㄱ-힣]|[\d\s]+[,|/|.]*[\d]*)+:({"|".join(entities)})[>]'
+        repl_info = {'loc':[], 'repl':[]}
+
+        for found in re.finditer(regex, target):
+            if found is None or found.group().strip('<>')=='':
+                continue
+            else:
+                matched = found.group().strip(' <>').split(':')# 0: 요소, 1: entity
+                chars = list(matched[0])
+                labels = []
+                for i in range(len(chars)):
+                    if i ==0:
+                        labels.append(f'B-{matched[1]}')
+                    else:
+                        labels.append(f'I-{matched[1]}')
+                repl_info['repl'].append([chars, labels])    
+                repl_info['loc'].append(found.span())
+
+
+        # 사례별
+        modified_chars = []
+        modified_labels = []
+        for i, repl in enumerate(repl_info['repl']):
+            if i == 0:
+                tmp =  list(target[:repl_info['loc'][i][0]])
+
+                tmp_lbl = ['O']*len(tmp)
+                tmp_lbl.extend(repl[1])
+                modified_labels.extend(tmp_lbl)
+
+                tmp.extend(repl[0])
+                modified_chars.extend(tmp)
+            # elif i < len(repl_info['repl'])-1 and i >0:
+            # elif 0<i and  i < len(repl_info['repl'])-1:
+            elif 0 < i and i < len(repl_info['repl'])-1:
+                tmp = list(target[repl_info['loc'][i-1][1]: repl_info['loc'][i][0]])
+
+                tmp_lbl = ['O']*len(tmp)
+                tmp_lbl.extend(repl[1])
+                modified_labels.extend(tmp_lbl)
+
+                tmp.extend(repl[0])
+                modified_chars.extend(tmp)
+                # modified_target.extend([tmp, repl])
+            elif i == len(repl_info['repl'])-1:
+                tmp1 =  list(target[repl_info['loc'][i-1][1]: repl_info['loc'][i][0]])
+                tmp2 =  list(target[repl_info['loc'][i][1]:])
+
+                tmp_lbl1 = ['O']*len(tmp1)
+                tmp_lbl2 = ['O']*len(tmp2)
+                repl[1].extend(tmp_lbl2)
+                tmp_lbl1.extend(repl[1])
+                modified_labels.extend(tmp_lbl1)
+
+                repl[0].extend(tmp2)
+                tmp1.extend(repl[0])
+                modified_chars.extend(tmp1)
+                # modified_target.extend([tmp1, repl,tmp2])
+        # modified_target = ' '.join(modified_target)
+        assert len(modified_chars) == len(modified_labels)
+        modified_data.append([row[0], row[1], row[-1], [modified_chars, modified_labels]])
+
+    # 임시
+    # modified_data = modified_data[:1000]
+
+    with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.json', 'w', encoding='utf8') as f:
+        result = pd.DataFrame(modified_data).to_json(orient="values")
+        parsed = json.loads(result)
+        jsonData = json.dumps(parsed, indent=4, ensure_ascii=False)
+        f.write(jsonData)
+    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.json')
+    # with open(f'/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/final.json', encoding='utf8') as f:
+    #     jsondata = json.loads(f.read())
+
+    with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio.tsv', mode='a', encoding='utf8') as f:
+        for row in tqdm(modified_data):
+            for el in row:
+                f.write(f'\n')
+                if isinstance(el, list):
+                    text = '\n'.join(['\t'.join(i) for i in zip(el[0], el[1])])
+                    f.write(text)
+                elif isinstance(el, str):
+                    f.write(f'##{el}')
+                elif isinstance(el, int):
+                    f.write(f'##{str(el)}')
+    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.tsv')
 
 path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, '0925_ner_298452_1.csv')
+df_to_bio = pd.read_csv(f'{path}2109271703_tagged.csv', encoding='utf8')
+data = df_to_bio.to_numpy() 
+get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 
-df_to_bio = pd.read_csv(f'{path}0926_tagged.csv', encoding='utf8')
-
-data = df_to_bio.to_numpy()
-for row in data:
-    id = row[0]
-    target = row[1]
-    entities = ['INGR','QTY','UNIT']
-    regex = f'[<][\wㄱ-힣]+:({"|".join(entities)})[>]'
-    repl_info = {'loc':[], 'repl':[]}
-
-    for found in re.finditer(regex, target):
-        if found is None or found.group().strip('<>')=='':
-            continue
-        else:
-            matched = found.group().strip('<>').split(':')# 0: 요소, 1: entity
-            chars = list(matched[0])
-            labels = []
-            for i in range(len(chars)):
-                if i ==0:
-                    labels.append(f'B-{matched[1]}')
-                else:
-                    labels.append(f'I-{matched[1]}')
-            repl_info['repl'].append([chars, labels])    
-            repl_info['loc'].append(found.span)
-
-    ## 이제 모은 값들로 KLUE 형식에 맞게 txt 파일로 저장

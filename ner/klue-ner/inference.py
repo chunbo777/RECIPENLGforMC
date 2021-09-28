@@ -225,9 +225,9 @@ def inference(args):
 
         output = model(
             input_ids,
-            token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             labels=labels,
+            token_type_ids=token_type_ids,
         )[1]
 
         pred = output.argmax(dim=2)

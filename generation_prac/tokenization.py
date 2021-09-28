@@ -1,4 +1,4 @@
-from transformers import GPT2Tokenizer
+from transformers import GPT2Tokenizer, PreTrainedTokenizerFast
 import h5py
 import numpy as np
 
