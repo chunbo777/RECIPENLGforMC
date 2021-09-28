@@ -254,7 +254,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--batch_size",
         type=int,
-        default=16,
+        # default=16,
+        default=4,
         metavar="N",
         help="input batch size for inference (default: 64)",
     )

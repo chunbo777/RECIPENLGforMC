@@ -72,7 +72,10 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
                     token = token.replace(strip_char, "")# 원래 문장에서 추출한 문자만 남음(unk 제외)
                     if not token:
                         continue
-                    modi_labels.append(original_clean_labels[char_idx])# 두개 이상의 문자가 하나의 token으로 합쳐진경우 첫 문자의 label을 새로이 생성된 token의 label로 배정
+                    # 두개 이상의 문자가 하나의 token으로 합쳐진경우 첫 문자의 label을 새로이 생성된 token의 label로 배정
+                    modi_labels.append(original_clean_labels[char_idx])
+                    # token중 일부가 Unknown token일 경우 (진짜?ㅋㅋㅠㅠ=> 진짜,?,ㅋㅋ,ㅠㅠ=>진짜,?,[UNK],[UNK])
+                    # 첫번째 문자("당")의 tag 정보가 공백 구분자를 통해 생성된 각 토큰의 tag 정보가 됨
                     if not contain_unk: 
                         char_idx += len(token)
                 if contain_unk:# ㅋㅋ, ㅠㅠ 같은 것들은 unk로 저장

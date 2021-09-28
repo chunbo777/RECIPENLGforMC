@@ -18,6 +18,9 @@ from transformers import (
 )
 from tokenization_kobert import KoBertTokenizer
 
+import re
+
+
 MODEL_CLASSES = {
     'kobert': (BertConfig, BertForTokenClassification, KoBertTokenizer),
     'distilkobert': (DistilBertConfig, DistilBertForTokenClassification, KoBertTokenizer),
@@ -25,6 +28,8 @@ MODEL_CLASSES = {
     'kobert-lm': (BertConfig, BertForTokenClassification, KoBertTokenizer),
     'koelectra-base': (ElectraConfig, ElectraForTokenClassification, ElectraTokenizer),
     'koelectra-small': (ElectraConfig, ElectraForTokenClassification, ElectraTokenizer),
+
+    'koelectra-base_v3': (ElectraConfig, ElectraForTokenClassification, ElectraTokenizer),
 }
 
 MODEL_PATH_MAP = {
@@ -34,17 +39,34 @@ MODEL_PATH_MAP = {
     'kobert-lm': 'monologg/kobert-lm',
     'koelectra-base': 'monologg/koelectra-base-discriminator',
     'koelectra-small': 'monologg/koelectra-small-discriminator',
+
+    'koelectra-base_v3': 'monologg/koelectra-base-v3-discriminator',
 }
 
 
 def get_test_texts(args):
     texts = []
     with open(os.path.join(args.data_dir, args.test_file), 'r', encoding='utf-8') as f:
-        for line in f:
-            text, _ = line.split('\t')
-            text = text.split()
+        # for line in f:
+        #     text, _ = line.split('\t')
+        #     text = text.split()
+        #     texts.append(text)
+        raw_text = f.read().strip()
+        raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)
+        for data in raw_docs:
+            chars = []
+            for line in data.split("\n"):
+                if line.startswith("##"):  # skip comment
+                    continue
+                elif len(line.split("\t")) !=2:
+                # 자동 태깅 과정에서 오류 발생 
+                # ex) '()' 표시가 없어짐 말린 밤(황률) => 말린  밤 황률)
+                # 이거 대신 원문을 사용해보기
+                    continue 
+                token, _ = line.split("\t")
+                chars.append(token)
+            text = ''.join(chars)
             texts.append(text)
-
     return texts
 
 
