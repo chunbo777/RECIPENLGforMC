@@ -158,11 +158,11 @@ class Trainer(object):
         for batch in tqdm(eval_dataloader, desc="Evaluating"):
             batch = tuple(t.to(self.device) for t in batch)
             with torch.no_grad():
-                inputs = {'input_ids': batch[0],
-                          'attention_mask': batch[1],
-                          'labels': batch[3]}
+                inputs = {'input_ids': batch[0],# eval batchsize, max_sequence
+                          'attention_mask': batch[1],# eval batchsize, max_sequence
+                          'labels': batch[3]}## eval batchsize, max_sequence
                 if self.args.model_type != 'distilkobert':
-                    inputs['token_type_ids'] = batch[2]
+                    inputs['token_type_ids'] = batch[2]# eval batchsize, max_sequence
                 outputs = self.model(**inputs)
                 tmp_eval_loss, logits = outputs[:2]
 
@@ -183,7 +183,7 @@ class Trainer(object):
         }
 
         # Slot result
-        preds = np.argmax(preds, axis=2)
+        preds = np.argmax(preds, axis=2)# tag 중 가장 가망이 높은것 출력
         slot_label_map = {i: label for i, label in enumerate(self.label_lst)}
         out_label_list = [[] for _ in range(out_label_ids.shape[0])]
         preds_list = [[] for _ in range(out_label_ids.shape[0])]
