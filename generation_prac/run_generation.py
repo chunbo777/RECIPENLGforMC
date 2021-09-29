@@ -27,7 +27,9 @@ import numpy as np
 
 from transformers import GPT2Config
 
-from transformers import GPT2LMHeadModel, GPT2Tokenizer
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, PreTrainedTokenizerFast
+
+import os
 
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
@@ -39,6 +41,7 @@ MAX_LENGTH = int(10000)  # Hardcoded max length to avoid infinite loop
 
 MODEL_CLASSES = {
     'gpt2': (GPT2LMHeadModel, GPT2Tokenizer),
+    'kogpt2': (GPT2LMHeadModel, PreTrainedTokenizerFast),
 }
 
 
@@ -73,10 +76,10 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
         sorted_indices_to_remove = cumulative_probs > top_p
         # Shift the indices to the right to keep also the first token above the threshold
         sorted_indices_to_remove[..., 1:] = sorted_indices_to_remove[..., :-1].clone()
-        sorted_indices_to_remove[..., 0] = 0
+        sorted_indices_to_remove[..., 0] = 0# False
 
-        indices_to_remove = sorted_indices[sorted_indices_to_remove]
-        logits[indices_to_remove] = filter_value
+        indices_to_remove = sorted_indices[sorted_indices_to_remove]# softmax 결과값이 0에 가까운 token 제외
+        logits[indices_to_remove] = filter_value# 불필요하다 생각되는 token의 값에 음의 무한대 값 배정
     return logits
 
 
@@ -88,9 +91,9 @@ def sample_sequence(model, length, context, tokenizer, num_samples=1, temperatur
     with torch.no_grad():
         for _ in trange(length):
             inputs = {'input_ids': generated}
-            outputs = model(**inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet (cached hidden-states)
-            next_token_logits = outputs[0][0, -1, :] / temperature
-            filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
+            outputs = model(**inputs)#torch.Size([1, 8, 50270])  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet (cached hidden-states)
+            next_token_logits = outputs[0][0, -1, :] / temperature# 마지막 tensor 값, torch.Size([50270])
+            filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)# 중요도가 떨어지는 반환값은 음의 무한대로 수정됨
             next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
             generated = torch.cat((generated, next_token.unsqueeze(0)), dim=1)
             if next_token.item() == end_token:
@@ -105,13 +108,15 @@ def main():
     # 20120903
     # parser.add_argument("--model_type", default=None, type=str, required=True,
     #                     help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
-    parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    # parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    parser.add_argument("--model_type", default='kogpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
 
     # 20120903
     # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
     #                     help="Path to pre-trained model")
     # parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
-    parser.add_argument("--model_name_or_path", default='/home/lab17/RECIPENLGforMC/generation_prac/dataout/', type=str, help="Path to pre-trained model")
+    # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/dataout/', type=str, help="Path to pre-trained model")
+    parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/kogpt_model/', type=str, help="Path to pre-trained model")
 
     parser.add_argument("--prompt", type=str, default="")
     # parser.add_argument("--length", type=int, default=20)

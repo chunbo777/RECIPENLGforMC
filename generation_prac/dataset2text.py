@@ -1,13 +1,13 @@
-                        from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split
 import pandas as pd
 import re
 import traceback
+import os
 
-df = pd.read_csv("/home/lab17/RECIPENLGforMC/generation_prac/datain/full_dataset.csv")
-df1 = pd.read_csv("/home/lab17/RECIPENLGforMC/generation_prac/datain/data_1m.csv", )
+# df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/full_dataset.csv")
+df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/data_1m.csv", )
 
 import re
-
 
 # It is crucial to create the model that generate ”rich”, extensive recipes. 
 # Therefore, we removed recipes that do not provide the model with sufficiently comprehensive information
@@ -21,10 +21,10 @@ import re
 # The incorrect use of the word ’step’ causes losing the meaning of the entire instruction
 # df.drop(df[df.directions.map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
 
-df.drop(df[df[df.columns[1]].map(lambda x: len(x)<4)].index, inplace=True)
-df.drop(df[df[df.columns[2]].map(lambda x: len(x)<2)].index, inplace=True)
-df.drop(df[df[df.columns[3]].map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
-df.drop(df[df[df.columns[3]].map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
+# df.drop(df[df[df.columns[1]].map(lambda x: len(x)<4)].index, inplace=True)
+# df.drop(df[df[df.columns[2]].map(lambda x: len(x)<2)].index, inplace=True)
+# df.drop(df[df[df.columns[3]].map(lambda x: len(x) < 2 or len(''.join(x)) < 30)].index, inplace=True)
+# df.drop(df[df[df.columns[3]].map(lambda x: re.search('(step|mix all)', ''.join(str(x)), re.IGNORECASE)!=None)].index, inplace=True)
 
 df.reset_index(drop=True, inplace=True)
 
@@ -40,19 +40,17 @@ The additional test set was also prepared for the purpose of checking evaluation
 # 학습데이터의 크기조정
 # df = df.iloc[:int(df.shape[0]/4)]
 
-import json
-with open('./eceptions1.txt', 'w', encoding="utf-8") as f:
-    for index, row in df1.iterrows():
-        if index%100000==0:
-            print(index)
-        for i in range(3):
-            try:
-                json.loads(row[row.index.values[i+2]].replace('\u200b',''))
-            except Exception as e:
-                traceback.print_exc()
-                f.write("{}\r\n{}\r\n".format(' ,'.join([e.args[-1], row[row.index.values[i+2]], row.index.values[i+2], str(index)]),df.iloc[index][df.columns[i+2]]))
-
-
+# import json
+# with open('./eceptions1.txt', 'w', encoding="utf-8") as f:
+#     for index, row in df1.iterrows():
+#         if index%100000==0:
+#             print(index)
+#         for i in range(3):
+#             try:
+#                 json.loads(row[row.index.values[i+2]].replace('\u200b',''))
+#             except Exception as e:
+#                 traceback.print_exc()
+#                 f.write("{}\r\n{}\r\n".format(' ,'.join([e.args[-1], row[row.index.values[i+2]], row.index.values[i+2], str(index)]),df.iloc[index][df.columns[i+2]]))
 
 
 train, test = train_test_split(df, test_size=0.05) #use 5% for test set
@@ -95,5 +93,5 @@ def df_to_plaintext_file(input_df, output_file):
               " <NEXT_INSTR> ".join(directions) + " <INSTR_END> <TITLE_START> " + title + " <TITLE_END> <RECIPE_END>"
             f.write("{}\n".format(res))
 
-# df_to_plaintext_file(train, '/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_train_kr_1m_translated_short.txt')
-# df_to_plaintext_file(test, '/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_test_kr_1m_translated_short.txt')
+df_to_plaintext_file(train, f'{os.path.dirname(__file__)}/datain/unsupervised_train_kr_1m_translated.txt')
+df_to_plaintext_file(test, f'{os.path.dirname(__file__)}/datain/unsupervised_test_kr_1m_translated.txt')
