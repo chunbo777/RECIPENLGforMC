@@ -6,7 +6,7 @@ import torch
 import numpy as np
 from seqeval.metrics import precision_score, recall_score, f1_score, classification_report
 
-import tqdm
+from tqdm import tqdm
 
 from transformers import (
     BertConfig,
