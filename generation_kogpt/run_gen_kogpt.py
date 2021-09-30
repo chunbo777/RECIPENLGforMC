@@ -7,12 +7,13 @@ import torch.nn.functional as F
 import numpy as np
 
 # from transformers import *
+from transformers import GPT2Config
 from transformers import PreTrainedTokenizerFast
 from transformers import GPT2LMHeadModel, GPT2Tokenizer
 
-tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2",
-  bos_token='</s>', eos_token='</s>', unk_token='<unk>',
-  pad_token='<pad>', mask_token='<mask>') 
+# tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2",
+#   bos_token='</s>', eos_token='</s>', unk_token='<unk>',
+#   pad_token='<pad>', mask_token='<mask>') 
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -76,7 +77,8 @@ def sample_sequence(model, length, context, tokenizer, num_samples=1, temperatur
             filtered_logits = top_k_top_p_filtering(next_token_logits, top_k=top_k, top_p=top_p)
             next_token = torch.multinomial(F.softmax(filtered_logits, dim=-1), num_samples=1)
             generated = torch.cat((generated, next_token.unsqueeze(0)), dim=1)
-            if next_token.item() == end_token:
+            # max_length=min(1024, max_len + encoded_prompt.size(-1))
+            if (next_token.item() == end_token) or (generated.shape[1] == 1024):
                 break
     return generated
 
@@ -94,11 +96,11 @@ def main():
     # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
     #                     help="Path to pre-trained model")
     # parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
-    parser.add_argument("--model_name_or_path", default='skt/kogpt2-base-v2', type=str, help="Path to pre-trained model")
+    parser.add_argument("--model_name_or_path", default="/home/lab12/recipebranch/RECIPENLGforMC/generation_kogpt/ckpoint_new_kogpt/checkpoint-50000")
 
     parser.add_argument("--prompt", type=str, default="")
     # parser.add_argument("--length", type=int, default=20)
-    parser.add_argument("--length", type=int, default=1024)
+    parser.add_argument("--length", type=int, default=2048)
     parser.add_argument("--temperature", type=float, default=1.0)
     parser.add_argument("--top_k", type=int, default=0)
     parser.add_argument("--top_p", type=float, default=0.9)
