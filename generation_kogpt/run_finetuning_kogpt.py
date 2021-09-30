@@ -1,6 +1,6 @@
 """
 Fine-tuning the library models for language modeling on a text file (GPT-2,).
-GPT-2 is fine-tuned using a causal language modeling (CLM) loss
+GPT-2 is fine-tuned using a causal language modeling (CLM) losses
 """
 
 import argparse
