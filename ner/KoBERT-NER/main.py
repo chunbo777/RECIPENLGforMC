@@ -167,9 +167,9 @@ if __name__ == '__main__':
     parser.add_argument("--warmup_steps", default=0, type=int, help="Linear warmup over warmup_steps.")
 
     # parser.add_argument('--logging_steps', type=int, default=512, help="Log every X updates steps.")
-    parser.add_argument('--logging_steps', type=int, default=1024, help="Log every X updates steps.")
+    parser.add_argument('--logging_steps', type=int, default=32, help="Log every X updates steps.")
     # parser.add_argument('--save_steps', type=int, default=512, help="Save checkpoint every X updates steps.")
-    parser.add_argument('--save_steps', type=int, default=1024, help="Save checkpoint every X updates steps.")
+    parser.add_argument('--save_steps', type=int, default=32, help="Save checkpoint every X updates steps.")
 
     parser.add_argument("--do_train", default=True, action="store_true", help="Whether to run training.")
     parser.add_argument("--do_eval", default=True, action="store_true", help="Whether to run eval on the test set.")

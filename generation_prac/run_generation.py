@@ -102,21 +102,21 @@ def sample_sequence(model, length, context, tokenizer, num_samples=1, temperatur
 
 import re
 
-def main():
+def main(ingredients=None):
     parser = argparse.ArgumentParser()
 
     # 20120903
     # parser.add_argument("--model_type", default=None, type=str, required=True,
     #                     help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
-    # parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
-    parser.add_argument("--model_type", default='kogpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    # parser.add_argument("--model_type", default='kogpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
 
     # 20120903
     # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
     #                     help="Path to pre-trained model")
     # parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
-    # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/dataout/', type=str, help="Path to pre-trained model")
-    parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/kogpt_model/', type=str, help="Path to pre-trained model")
+    parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/dataout/', type=str, help="Path to pre-trained model")
+    # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/kogpt_model/', type=str, help="Path to pre-trained model")
 
     parser.add_argument("--prompt", type=str, default="")
     # parser.add_argument("--length", type=int, default=20)
@@ -151,7 +151,10 @@ def main():
 
     print(args)
     while True:
-        raw_text = args.prompt if args.prompt else input("Comma-separated ingredients, semicolon to close the list >>> ")
+        if ingredients is None:
+            raw_text = args.prompt if args.prompt else input("Comma-separated ingredients, semicolon to close the list >>> ")
+        else:
+            raw_text = ingredients
         prepared_input = '<RECIPE_START> <INPUT_START> ' + raw_text.replace(',', ' <NEXT_INPUT> ').replace(';', ' <INPUT_END>')
         context_tokens = tokenizer.encode(prepared_input)
         out = sample_sequence(
@@ -181,10 +184,13 @@ def main():
         markdown = re.sub("$ +#", "#", markdown)
         markdown = re.sub("( +`|` +)", "`", markdown)
         print(title+markdown)
-        if args.prompt:
+        # if args.prompt:
+        if args.prompt or ingredients is not None:
             break
-    return text
+    return title+markdown
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    text = main('우유')
+    print(text)

@@ -15,7 +15,6 @@ import re
 
 logger = logging.getLogger(__name__)
 
-
 def get_device(pred_config):
     return "cuda" if torch.cuda.is_available() and not pred_config.no_cuda else "cpu"
 
@@ -39,13 +38,23 @@ def load_model(pred_config, args, device):
 
     return model
 
-
+# from konlpy.tag import Mecab
+# m = Mecab()
 def read_input_file(pred_config, tokenizer):
     lines = []
     with open(pred_config.input_file, "r", encoding="utf-8") as f:
         raw_text = f.read().strip()
-        words = re.split('[^A-Za-z0-9ㄱ-힣]+', raw_text)
-        lines.append(words)
+        
+        # words = m.nouns(raw_text)
+        # lines.append(words)
+        
+        # words = re.split('[^A-Za-z0-9ㄱ-힣]+', raw_text)
+        # lines.append(words)
+        
+        for directions in raw_text.split('\n'):
+            for direction in directions.split('@#'):
+                words = re.sub('^[\d][.][\s]','',direction).split()
+                lines.append(words)
     return lines
 
 
@@ -144,7 +153,7 @@ def predict(pred_config):
 
     all_slot_label_mask = None
     preds = None
-
+    
     for batch in tqdm(data_loader, desc="Predicting"):
         batch = tuple(t.to(device) for t in batch)
         with torch.no_grad():
@@ -192,7 +201,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     parser.add_argument("--input_file", default=f"{os.path.dirname(__file__)}/data/sample_pred_in.txt", type=str, help="Input file for prediction")
-    parser.add_argument("--output_file", default=f"{os.path.dirname(__file__)}/data/sample_pred_out.txt", type=str, help="Output file for prediction")
+    parser.add_argument("--output_file", default=f"{os.path.dirname(__file__)}/data/sample_pred_out_2.txt", type=str, help="Output file for prediction")
     parser.add_argument("--model_dir", default=f"{os.path.dirname(__file__)}/model", type=str, help="Path to save, load model")
 
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for prediction")

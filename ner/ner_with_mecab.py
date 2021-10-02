@@ -6,7 +6,7 @@ import mysql.connector
 from tqdm import tqdm
 from konlpy.tag import Mecab
 from datetime import datetime
-
+import numpy as np
 
 class RecipeWithMySqlPipeline:
     def __init__(self):
@@ -178,21 +178,28 @@ import re
 import pandas as pd
 from datetime import date
 from tqdm import tqdm
+from konlpy.tag import Mecab
+
 def get_tagged_data(path, file_name):
     # with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
     with open(f'{path}{file_name}', mode='r', encoding='utf8') as f:
+
 
         df = pd.read_csv(f, encoding='utf8')
         data = df.to_numpy()
 
         tagged_data = []
+        regex_val = []
+
         for row in tqdm(data):
             target = f' {row[0]} '
-            unit = [u if u not in ['장'] else f'{u}' for u in row[1].split('@#') ] if isinstance(row[1], str) else []
-            qty = row[2].split('@#') if isinstance(row[2], str) else []
+            # unit = [u if u not in ['장'] else f'{u}' for u in row[1].split('@#') ] if isinstance(row[1], str) else []
+            unit = [u if u not in ['장'] else f'{u}' for u in row[-4].split('@#') ] if isinstance(row[-4], str) else []
+            # qty = row[2].split('@#') if isinstance(row[2], str) else []
+            qty = row[-3].split('@#') if isinstance(row[-3], str) else []
             
-            regex_For_Qty = f'([\d\s]+[,|/|.]*[\d]*|({"|".join(qty)})+)'
-            regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'
+            regex_For_Qty = f'([\d\s]+[,|/|.]*[\d]*|({"|".join(qty)})+)'#수량
+            regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'#단위
             regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
 
             repl_info= {'loc':[], 'repl':[]}
@@ -211,9 +218,14 @@ def get_tagged_data(path, file_name):
                 repl_info['loc'].append(found.span())#국간장 = 국간+장
                 repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
 
-            modified_target = target if len(repl_info['repl']) ==0 else ' '+process_text(repl_info, target)
+            if len(repl_info['repl']) ==0:
+                modified_target = target
+                regex_val.append([target, regex, row[1]])# 정규식 검정용
+            else:
+                modified_target = ' '+process_text(repl_info, target)
 
-            ingr = row[3].split('@#') if isinstance(row[3], str) else []
+            # ingr = row[3].split('@#') if isinstance(row[3], str) else []
+            ingr = row[-2].split('@#') if isinstance(row[-2], str) else []# 식재료
             ingr = [i if i not in ['파', '마늘', '생강'] else f'(다진\s|)*{i}' for i in ingr]
             ingr = [i if i not in ['고추'] else f'(붉은\s|풋\s)*{i}' for i in ingr]
             ingr = [i if i not in ['미역', '쇠미역', '문어'] else f'(마른\s|)*{i}' for i in ingr]
@@ -223,36 +235,53 @@ def get_tagged_data(path, file_name):
             ingr = [i if i not in ['찹쌀'] else f'{i}(가루\s|)*' for i in ingr]
             ingr = [i if i not in ['토끼'] else f'{i}(고기\s|)*' for i in ingr]
             ingr = [i for i in ingr if i not in ['적량']]# 감성돔 추가필요
-            regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^:])'
-            
+            # regex_For_Ingr = f'([^((<|>)(\w*|ㄱ-힣*))]*({"|".join(ingr)})(<\w*|ㄱ-힣*)*[^:])'
+
+            regex_For_Ingr = f'((\w*|ㄱ-힣*)*({"|".join(ingr)})(\w*|ㄱ-힣*)*)'
+
             repl_info= {'loc':[], 'repl':[]}
             for found in re.finditer(regex_For_Ingr, modified_target):
                 if found is None or found.group().strip()=='':
                     continue
+                elif re.search('[<][\w|ㄱ-힣]+[:]', found.group().strip()) is not None:
+                    continue# 이미 TAGGING 된 정보는 제외
                 else:
                     matched = re.sub('[^\w]', '', found.group())
                     if matched !='':
                         repl = f'<{matched}:INGR>'
                         repl_info['loc'].append(found.span())
                         repl_info['repl'].append(repl)
+            if len(repl_info['repl']) ==0:
+                tagged_target = modified_target
+                regex_val.append([modified_target, regex, row[1]])# 정규식 검정용
+            else:
+                tagged_target = process_text(repl_info, modified_target)
 
-            tagged_target = modified_target if len(repl_info['repl']) ==0 else process_text(repl_info, modified_target)
             if tagged_target == '':
-                print('row ############################')
-                print(row)
-                print('modified_target ############################')
-                print(modified_target)
-                print('tagged_target ############################')
-                print(tagged_target)
-                print('############################')
+                continue
             else:        
                 tagged_data.append([row[-1],row[0],tagged_target.replace('@#','')])
 
-    # pd.DataFrame(tagged_data).to_csv(open(f'{path}{date.today().strftime("%m%d")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
+    m = Mecab()
+    ## insert 구문 생성
+    ## 식재료가 제대로 tagging 되지 않은 경우
+
+    ingr_to_add = [ ]
+    for i, k in np.array(regex_val)[:,[0,-1]]:
+        if ":UNIT" not in i or ":QTY" not in i:# test
+            print(i)
+        text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>|[(]|[)]|[<]|[>]|[방법]|[\s]|[\d]|[〈]|[〉]|[:])+',' ',i.strip()).replace(']','').replace('[','')
+        for j in re.split(' ',text):
+            if j not in ['',]:
+                ingr_to_add.append(f"INSERT INTO ner_set (ner, pos, cate) values ('{j}','custom','ingr');##{i} #### {k}")
+
+    ingr_set = set(ingr_to_add)# 중복제거
+    pd.DataFrame(ingr_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_ingr_to_add_{len(ingr_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
+
     pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
     print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv')
 # path = f'{os.path.dirname(__file__)}/data/'
-# get_tagged_data(path, '0925_ner_298452_1.csv')
+# get_tagged_data(path, '0925_ner_298452_1.csv')url
 
 
 def get_BIO_data(path, data):
@@ -350,8 +379,8 @@ def get_BIO_data(path, data):
         print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv')
 
 path = f'{os.path.dirname(__file__)}/data/'
-# get_tagged_data(path, '0928_train_data_for_NER.csv')
-df_to_bio = pd.read_csv(f'{path}21092820_tagged.csv', encoding='utf8')
-data = df_to_bio.to_numpy() 
-get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
+get_tagged_data(path, 'test_data_ner_1000.csv')
+# df_to_bio = pd.read_csv(f'{path}21092820_tagged.csv', encoding='utf8')
+# data = df_to_bio.to_numpy() 
+# get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 

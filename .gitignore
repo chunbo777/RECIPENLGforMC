@@ -145,3 +145,4 @@ runs/
 output/
 wandb/
 preds/
+model/

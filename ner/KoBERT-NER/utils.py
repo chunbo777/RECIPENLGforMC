@@ -54,7 +54,11 @@ def get_test_texts(args, tokenizer):
         #     text = text.split()
         #     texts.append(text)
         raw_text = f.read().strip()
-        raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)
+
+        # 20211001
+        # raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)
+        raw_docs = re.split(r"\n\t?\n", raw_text)# klue
+
         for data in tqdm(raw_docs):
             chars = []
             for line in data.split("\n"):
@@ -81,7 +85,16 @@ def get_test_texts(args, tokenizer):
 
 
 def get_labels(args):
-    return [label.strip() for label in open(os.path.join(args.data_dir, args.label_file), 'r', encoding='utf-8')]
+
+    # return [label.strip() for label in open(os.path.join(args.data_dir, args.label_file), 'r', encoding='utf-8')]
+
+    # klue 학습 과정 확인중
+    return [
+        'UNK', 'O',#20211001
+        "B-PS", "I-PS", "B-LC", "I-LC", "B-OG", "I-OG",
+        "B-DT", "I-DT", "B-TI", "I-TI", "B-QT", "I-QT",
+        # "O",
+    ]
 
 
 def load_tokenizer(args):
