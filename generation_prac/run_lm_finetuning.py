@@ -43,7 +43,7 @@ class TextDataset(Dataset):
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
         # cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5"
-        cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated_short.h5"
+        cached_features_file = f"{os.path.dirname(__file__)}/datain/unsupervised_translated_short.h5"
 
         logger.info("Loading features from cached file %s", cached_features_file)
         with h5py.File(cached_features_file, 'r') as f:
@@ -105,7 +105,7 @@ def train(args, train_dataset, model, tokenizer):
     '''
 
     try:
-        from apex import amp# 여기서는 gpu가 없어 안돌아감
+        from apex import amp
     except ImportError:
         raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
     model, optimizer = amp.initialize(model, optimizer, opt_level="O2")#>>1278MiB

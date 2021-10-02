@@ -1,8 +1,10 @@
 from transformers import GPT2Tokenizer, PreTrainedTokenizerFast
 import h5py
 import numpy as np
+import os
 
-tokenizer = GPT2Tokenizer.from_pretrained("gpt2", do_lower_case=False)
+# tokenizer = GPT2Tokenizer.from_pretrained("gpt2", do_lower_case=False)
+tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2")
 special_tokens = {
     "additional_special_tokens": [
         "<TITLE_START>",
@@ -27,10 +29,10 @@ tokenizer.add_special_tokens(special_tokens)
 
 end_token_id = tokenizer.convert_tokens_to_ids(["<RECIPE_END>"])[0]
 
-hf = h5py.File("/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated_short.h5", "w")
+hf = h5py.File(f"{os.path.dirname(__file__)}/datain/unsupervised_translated_short.h5", "w")
 for filename in ["unsupervised_test_kr_1m_translated_short", "unsupervised_train_kr_1m_translated_short"]:
     out_np = []
-    data = open("/home/lab17/RECIPENLGforMC/generation_prac/datain/"+filename+".txt", "r", encoding='utf-8')
+    data = open(f"{os.path.dirname(__file__)}/datain/"+filename+".txt", "r", encoding='utf-8')
     num = 0
     rows = 0
     last=[]

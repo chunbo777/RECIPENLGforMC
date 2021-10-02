@@ -10,8 +10,10 @@ from transformers import AutoModelForTokenClassification
 
 from utils import init_logger, load_tokenizer, get_labels
 
-logger = logging.getLogger(__name__)
 
+import re
+
+logger = logging.getLogger(__name__)
 
 def get_device(pred_config):
     return "cuda" if torch.cuda.is_available() and not pred_config.no_cuda else "cpu"
@@ -36,15 +38,23 @@ def load_model(pred_config, args, device):
 
     return model
 
-
-def read_input_file(pred_config):
+# from konlpy.tag import Mecab
+# m = Mecab()
+def read_input_file(pred_config, tokenizer):
     lines = []
     with open(pred_config.input_file, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            words = line.split()
-            lines.append(words)
-
+        raw_text = f.read().strip()
+        
+        # words = m.nouns(raw_text)
+        # lines.append(words)
+        
+        # words = re.split('[^A-Za-z0-9ㄱ-힣]+', raw_text)
+        # lines.append(words)
+        
+        for directions in raw_text.split('\n'):
+            for direction in directions.split('@#'):
+                words = re.sub('^[\d][.][\s]','',direction).split()
+                lines.append(words)
     return lines
 
 
@@ -80,7 +90,7 @@ def convert_input_file_to_tensor_dataset(lines,
             slot_label_mask.extend([0] + [pad_token_label_id] * (len(word_tokens) - 1))
 
         # Account for [CLS] and [SEP]
-        special_tokens_count = 2
+        special_tokens_count = 2# 전처리를 할때 문맥상 나눠지는 부분 확인(이미지 문자인식), 너무 많이 잘려나감
         if len(tokens) > args.max_seq_len - special_tokens_count:
             tokens = tokens[: (args.max_seq_len - special_tokens_count)]
             slot_label_mask = slot_label_mask[:(args.max_seq_len - special_tokens_count)]
@@ -134,7 +144,7 @@ def predict(pred_config):
     # Convert input file to TensorDataset
     pad_token_label_id = torch.nn.CrossEntropyLoss().ignore_index
     tokenizer = load_tokenizer(args)
-    lines = read_input_file(pred_config)
+    lines = read_input_file(pred_config, tokenizer)
     dataset = convert_input_file_to_tensor_dataset(lines, pred_config, args, tokenizer, pad_token_label_id)
 
     # Predict
@@ -143,7 +153,7 @@ def predict(pred_config):
 
     all_slot_label_mask = None
     preds = None
-
+    
     for batch in tqdm(data_loader, desc="Predicting"):
         batch = tuple(t.to(device) for t in batch)
         with torch.no_grad():
@@ -153,7 +163,7 @@ def predict(pred_config):
             if args.model_type != "distilkobert":
                 inputs["token_type_ids"] = batch[2]
             outputs = model(**inputs)
-            logits = outputs[0]
+            logits = outputs[0]#torch.Size([batch_size, max_seq_len, label_num])
 
             if preds is None:
                 preds = logits.detach().cpu().numpy()
@@ -162,7 +172,7 @@ def predict(pred_config):
                 preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
                 all_slot_label_mask = np.append(all_slot_label_mask, batch[3].detach().cpu().numpy(), axis=0)
 
-    preds = np.argmax(preds, axis=2)
+    preds = np.argmax(preds, axis=2)#[batch_size, max_seq_len] << [batch_size, max_seq_len, label_num]
     slot_label_map = {i: label for i, label in enumerate(label_lst)}
     preds_list = [[] for _ in range(preds.shape[0])]
 
@@ -190,9 +200,9 @@ if __name__ == "__main__":
     init_logger()
     parser = argparse.ArgumentParser()
 
-    parser.add_argument("--input_file", default="sample_pred_in.txt", type=str, help="Input file for prediction")
-    parser.add_argument("--output_file", default="sample_pred_out.txt", type=str, help="Output file for prediction")
-    parser.add_argument("--model_dir", default="./model", type=str, help="Path to save, load model")
+    parser.add_argument("--input_file", default=f"{os.path.dirname(__file__)}/data/sample_pred_in.txt", type=str, help="Input file for prediction")
+    parser.add_argument("--output_file", default=f"{os.path.dirname(__file__)}/data/sample_pred_out_2.txt", type=str, help="Output file for prediction")
+    parser.add_argument("--model_dir", default=f"{os.path.dirname(__file__)}/model", type=str, help="Path to save, load model")
 
     parser.add_argument("--batch_size", default=32, type=int, help="Batch size for prediction")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")

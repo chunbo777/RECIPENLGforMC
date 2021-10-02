@@ -32,9 +32,10 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
         _, strip_char = 'bert-wp', "##"# pretrained tokenizer type이 이상
 
     label_list = [
+        'UNK', 'O',#20211001 학습모델의 label list와 동일한 형태로 조정
         "B-PS", "I-PS", "B-LC", "I-LC", "B-OG", "I-OG",
         "B-DT", "I-DT", "B-TI", "I-TI", "B-QT", "I-QT",
-        "O",
+        # "O",
     ]
     file_path = Path(file_path)
     raw_text = file_path.read_text().strip()
