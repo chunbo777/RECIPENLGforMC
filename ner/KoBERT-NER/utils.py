@@ -56,8 +56,8 @@ def get_test_texts(args, tokenizer):
         raw_text = f.read().strip()
 
         # 20211001
-        # raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)
-        raw_docs = re.split(r"\n\t?\n", raw_text)# klue
+        raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)# 실제 사용하는 data
+        # raw_docs = re.split(r"\n\t?\n", raw_text)# klue
 
         for data in tqdm(raw_docs):
             chars = []

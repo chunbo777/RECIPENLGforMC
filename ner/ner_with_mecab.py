@@ -220,7 +220,7 @@ def get_tagged_data(path, file_name):
 
             if len(repl_info['repl']) ==0:
                 modified_target = target
-                regex_val.append([target, regex, row[1]])# 정규식 검정용
+                regex_val.append([target, regex, row[1], row[-1]])# 정규식 검정용
             else:
                 modified_target = ' '+process_text(repl_info, target)
 
@@ -253,7 +253,7 @@ def get_tagged_data(path, file_name):
                         repl_info['repl'].append(repl)
             if len(repl_info['repl']) ==0:
                 tagged_target = modified_target
-                regex_val.append([modified_target, regex, row[1]])# 정규식 검정용
+                regex_val.append([modified_target, regex_For_Ingr, row[1], row[-1]])# 정규식 검정용
             else:
                 tagged_target = process_text(repl_info, modified_target)
 
@@ -266,22 +266,26 @@ def get_tagged_data(path, file_name):
     ## insert 구문 생성
     ## 식재료가 제대로 tagging 되지 않은 경우
 
-    ingr_to_add = [ ]
-    for i, k in np.array(regex_val)[:,[0,-1]]:
-        if ":UNIT" not in i or ":QTY" not in i:# test
-            print(i)
-        text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>|[(]|[)]|[<]|[>]|[방법]|[\s]|[\d]|[〈]|[〉]|[:])+',' ',i.strip()).replace(']','').replace('[','')
+    ingr_to_add_on_set = [ ]
+    relation_info = [ ]
+    for target, url, recipe_id in np.array(regex_val)[:,[0,-2,-1]]:
+        if ":UNIT" not in target or ":QTY" not in target:# test
+            print(target)
+        text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>|[(]|[)]|[<]|[>]|[방법]|[\s]|[\d]|[〈]|[〉]|[:])+',' ',target.strip()).replace(']','').replace('[','')
         for j in re.split(' ',text):
             if j not in ['',]:
-                ingr_to_add.append(f"INSERT INTO ner_set (ner, pos, cate) values ('{j}','custom','ingr');##{i} #### {k}")
+                ingr_to_add_on_set.append(f"INSERT INTO ner_set (ner, pos, cate) values ('{j}','custom','ingr');##{target} #### {url}")
+                relation_info.append(f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) select {recipe_id}, max(id) from ner_set")
 
-    ingr_set = set(ingr_to_add)# 중복제거
+    ingr_set = set(ingr_to_add_on_set)# 중복제거
     pd.DataFrame(ingr_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_ingr_to_add_{len(ingr_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
+    rel_set = set(relation_info)# 중복제거
+    pd.DataFrame(rel_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_rel_to_add_{len(rel_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
 
     pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
     print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv')
-# path = f'{os.path.dirname(__file__)}/data/'
-# get_tagged_data(path, '0925_ner_298452_1.csv')url
+path = f'{os.path.dirname(__file__)}/data/'
+get_tagged_data(path, 'beforeTagged_2110042058_1000.csv')
 
 
 def get_BIO_data(path, data):
@@ -378,8 +382,8 @@ def get_BIO_data(path, data):
                         f.write(f'##{str(el)}')
         print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv')
 
-path = f'{os.path.dirname(__file__)}/data/'
-get_tagged_data(path, 'test_data_ner_1000.csv')
+# path = f'{os.path.dirname(__file__)}/data/'
+# get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 # df_to_bio = pd.read_csv(f'{path}21092820_tagged.csv', encoding='utf8')
 # data = df_to_bio.to_numpy() 
 # get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
