@@ -180,10 +180,9 @@ from datetime import date
 from tqdm import tqdm
 from konlpy.tag import Mecab
 
-def get_tagged_data(path, file_name):
+def get_tagged_data(path, file_name, ner_set = None):
     # with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
     with open(f'{path}{file_name}', mode='r', encoding='utf8') as f:
-
 
         df = pd.read_csv(f, encoding='utf8')
         data = df.to_numpy()
@@ -192,7 +191,7 @@ def get_tagged_data(path, file_name):
         regex_val = []
 
         for row in tqdm(data):
-            target = f' {row[0]} '
+            target = f' {row[0]} '# 0: title, 1: url 2: ingredient, 3: directions
             # unit = [u if u not in ['장'] else f'{u}' for u in row[1].split('@#') ] if isinstance(row[1], str) else []
             unit = [u if u not in ['장'] else f'{u}' for u in row[-4].split('@#') ] if isinstance(row[-4], str) else []
             # qty = row[2].split('@#') if isinstance(row[2], str) else []
@@ -220,12 +219,13 @@ def get_tagged_data(path, file_name):
 
             if len(repl_info['repl']) ==0:
                 modified_target = target
-                regex_val.append([target, regex, row[1]])# 정규식 검정용
+                regex_val.append([target, regex, row[1], row[-1],'QtyAndUnit'])# 정규식 검정용
             else:
                 modified_target = ' '+process_text(repl_info, target)
 
             # ingr = row[3].split('@#') if isinstance(row[3], str) else []
             ingr = row[-2].split('@#') if isinstance(row[-2], str) else []# 식재료
+            
             ingr = [i if i not in ['파', '마늘', '생강'] else f'(다진\s|)*{i}' for i in ingr]
             ingr = [i if i not in ['고추'] else f'(붉은\s|풋\s)*{i}' for i in ingr]
             ingr = [i if i not in ['미역', '쇠미역', '문어'] else f'(마른\s|)*{i}' for i in ingr]
@@ -253,7 +253,7 @@ def get_tagged_data(path, file_name):
                         repl_info['repl'].append(repl)
             if len(repl_info['repl']) ==0:
                 tagged_target = modified_target
-                regex_val.append([modified_target, regex, row[1]])# 정규식 검정용
+                regex_val.append([modified_target, regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
             else:
                 tagged_target = process_text(repl_info, modified_target)
 
@@ -266,22 +266,60 @@ def get_tagged_data(path, file_name):
     ## insert 구문 생성
     ## 식재료가 제대로 tagging 되지 않은 경우
 
-    ingr_to_add = [ ]
-    for i, k in np.array(regex_val)[:,[0,-1]]:
-        if ":UNIT" not in i or ":QTY" not in i:# test
-            print(i)
-        text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>|[(]|[)]|[<]|[>]|[방법]|[\s]|[\d]|[〈]|[〉]|[:])+',' ',i.strip()).replace(']','').replace('[','')
+    ingr_to_add_on_set = [ ]
+    relation_info = [ ]
+    for target,regex__, url, recipe_id, cate in tqdm(np.array(regex_val)):
+        if cate =='QtyAndUnit' :# test
+            # print(target, cate)
+            # print(regex__)
+            continue
+        # text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>||[(]|[)]|[<]|[>]|[방][법]|[\s]|[\d]|[〈]|[〉]|[♩]|[+]|[:]|[·]|[,]|[!]|[~]|[?]|[♬]|[#]|[-]|[♥]|[♡]|[★]|[☆]|[♪]|[/]|[&]|[|]|[*]|[ﾉ]|[ω]|[.])+',' ',target.replace(']','').replace('[','').replace("'",'').replace("^",'').strip())
+        text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>|[(]|[)]|[<]|[>]|[ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]|[〈]|[〉]|[♩]|[+]|[:]|[·]|[,]|[!]|[~]|[?]|[♬]|[#]|[-]|[♥]|[♡]|[★]|[☆]|[♪]|[/]|[&]|[|]|[*]|[ﾉ]|[ω]|[.])+',' ',target.replace(']','').replace('[','').replace("'",'').replace("^",'').strip())
         for j in re.split(' ',text):
             if j not in ['',]:
-                ingr_to_add.append(f"INSERT INTO ner_set (ner, pos, cate) values ('{j}','custom','ingr');##{i} #### {k}")
+                isAlreadyInSet = False
+                if j in ner_set[:,1]:
+                    for k in ner_set:
+                        if k[1]==j and k[2]=='ingr':
+                            relation_info.append(
+                                f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {k[0]});##{j.strip()}, {target} #### {url}")
+                                # f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {k[0]});  select * from rel_btw_recipe_and_ner where NER_id =  {recipe_id}")
+                            isAlreadyInSet = True
+                            break
+                for k in ['이연복', '백종원', '백선생','정창욱','최현석', '오세득','박은희', '셰프', '요즘'
+                         ,'중국집', '노오븐', '양하순', '어린이', '사르르', '워터드립', '전문점', '굿', '오늘', '또띠아로'
+                         , '내맘대로', '야간매점', '밥통', 'feel通', '또띠아로', '내맘대로', '삼시세끼', '마리텔', '올리브쇼'
+                         , '한잔', '감칠맛', '굴향이', '정준하', '홈베이킹', '감기', '나들이가요', '호텔식', '황금레시피', '가정식요리'
+                         , '한끼식사', '생일', '컵케이크', '전부치는것', '생생정보', '요리', '느낄수'
+                         ]:
+                    if k in j:
+                        isAlreadyInSet = True
+                        break
 
-    ingr_set = set(ingr_to_add)# 중복제거
-    pd.DataFrame(ingr_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_ingr_to_add_{len(ingr_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
+                if not isAlreadyInSet:
+                    if m.pos(j.strip())[-1][-1][0] =='N': # 맨 끝 형태소가 명사계열로 확인되는 경우(~만들기, ~ 해보기 등과 같은 단어가 많이 넘어옴)
+                        ingr_to_add_on_set.append(
+                            # f"INSERT INTO ner_set (ner, pos, cate) values ('{j.strip()}','custom','ingr');INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) select {recipe_id}, max(id) from ner_set;##{target} #### {url}")
+                            f"INSERT INTO ner_set (ner, pos, cate) values ('{j.strip()}','custom','ingr');##{target} #### {url}")
+                            # f"INSERT INTO ner_set (ner, pos, cate) values ('{j.strip()}','custom','ingr');")
+
+    ingr_set = set(ingr_to_add_on_set)# 중복제거
+    if len(ingr_set) >0:
+        pd.DataFrame(ingr_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_ingr_to_add_{len(ingr_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
+
+    rel_set = set(relation_info)# 중복제거
+    if len(rel_set) >0:
+        pd.DataFrame(rel_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_rel_to_add_{len(rel_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
 
     pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv', mode='w', encoding='utf8'), header=False, index=False )
     print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_tagged.csv')
-# path = f'{os.path.dirname(__file__)}/data/'
-# get_tagged_data(path, '0925_ner_298452_1.csv')url
+
+
+path = f'{os.path.dirname(__file__)}/data/'
+with open(f'{path}ner_set_1006.csv', mode='r', encoding='utf8') as f:
+    df = pd.read_csv(f, encoding='utf8')
+    temp = df.to_numpy()
+    get_tagged_data(path, 'beforeTagged_211006_298452.csv', temp[:,:-1])
 
 
 def get_BIO_data(path, data):
@@ -378,8 +416,8 @@ def get_BIO_data(path, data):
                         f.write(f'##{str(el)}')
         print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv')
 
-path = f'{os.path.dirname(__file__)}/data/'
-get_tagged_data(path, 'test_data_ner_1000.csv')
+# path = f'{os.path.dirname(__file__)}/data/'
+# get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 # df_to_bio = pd.read_csv(f'{path}21092820_tagged.csv', encoding='utf8')
 # data = df_to_bio.to_numpy() 
 # get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
