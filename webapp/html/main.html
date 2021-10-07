@@ -1,25 +1,3 @@
-# "main" module, e.g. import app.main
-
-from fastapi import FastAPI
-from core.config import settings
-from fastapi.responses import HTMLResponse
-app = FastAPI()
-# from ..html import getContents
-# from fastapi import APIRouter, Depends, HTTPException
-# from .dependencies import get_token_header
-
-# router = APIRouter(
-#     prefix="/items",
-#     tags=["items"],
-#     dependencies=[Depends(get_token_header)],
-#     responses={404: {"description": "Not found"}},
-# )
-
-@app.get("/")
-async def root():
-    # return {"message": "Hello World "}
-    # contents = getContents('main.html')
-    contents = '''
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,6 +16,18 @@ async def root():
         a:hover {
         color: #fff;
         }
+
+        /* Custom default button */
+        .btn-secondary,
+        .btn-secondary:hover,
+        .btn-secondary:focus {
+        color: rgb(136, 122, 122);
+        text-shadow: none; /* Prevent inheritance from `body` */
+        background-color: #fff;
+        border: .05rem solid #fff;
+        }
+
+
         /*
         * Base structure
         */
@@ -49,7 +39,15 @@ async def root():
         }
 
         body {
+        display: -ms-flexbox;
+        display: -webkit-box;
+        display: flex;
+        -ms-flex-pack: center;
+        -webkit-box-pack: center;
+        justify-content: center;
         color: #fff;
+        text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
+        box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
         }
 
 
@@ -83,16 +81,16 @@ async def root():
             span.innerHTML = $(e.target.parentElement).find('input')[0].value
             spanclasses = ['primary','secondary','success', 'danger', 'warning', 'info', 'dark']
             span.className = 'badge bg-'+spanclasses[Math.floor(spanclasses.length*Math.random())]
-            span.onclick = (event)=>{
-                whenSpanClicked(event.target)
+            span.onclick = (e)=>{
+                whenSpanClicked(e.target)
             }
             e.target.parentElement.remove()
         }
         el.remove()
     }
-
-
     $(()=>{
+        // alert('haha')
+        $('div#params.col-sm-8')
         $("span.badge").on("dblclick", (e)=>{
             console.log(e.target)
             e.target.remove()
@@ -123,9 +121,8 @@ async def root():
             // e.target.remove()
         });
 
-        $("#getRecipe.btn.btn-primary").on("click", ()=>{
-            //alert("The paragraph was clicked.");
-            console.log($('span.badge'))
+        $(".btn.btn-primary").on("click", ()=>{
+            alert("The paragraph was clicked.");
             const array = $('span.badge')
             let foods = new Array
             for (let index = 0; index < array.length; index++) {
@@ -137,57 +134,27 @@ async def root():
             xhttp.onload = function() {
                 document.getElementById("Recipe").innerHTML = this.responseText;
             }
-            xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
-
+            xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join('@#'));
             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            xhttp.send("fname=Henry&lname=Ford");            
-        });        
+            xhttp.send("fname=Henry&lname=Ford");          
+        });      
     })
 </script>
 <body>
     <div class="container">
-        <h1 class='.display-1'>셀럽시피&발명식당!</h1>
+        <h1 class='.display-1'>My First Bootstrap Page</h1>
         <p>This is some text.</p>
         <div class="row">
-            <div class="col-sm-4">
-                <img class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
-            </div>
+            <div class="col-sm-4"></div>
             <div class="col-sm-8">
                 <div class="row">
-                    <div class="col-sm-8" id="params">
-                        <span class="badge bg-primary">공심채</span>
-                        <span class="badge bg-secondary">간마늘</span>
-                        <span class="badge bg-success">페퍼톤치노</span>
-                        <span class="badge bg-danger">치킨스톡</span>
-                        <span class="badge bg-warning">피쉬소스</span>
-                        <span class="badge bg-info">굴소스</span>
-                        <span class="badge bg-dark">참기름</span>
-                    </div>
-                    <div class="col-sm-4"><button type="button" class="btn btn-primary" id="getRecipe">레시피 생성</button></div>
-
-
+                    <div class="col-sm-8">NER</div>
+                    <div class="col-sm-4">레시피생성</div>
                 </div>
-                <div class="row">
-                    <div class="progress">
-                        <div class="progress-bar" style="width:70%">70%</div>
-                    </div>
-                    <div class="row" id='Recipe'>Recipe</div>
-                </div>
+                <div class="row">Recipe</div>
 
             </div>
         </div>
     </div>
 </body>
 </html>
-    '''
-    return HTMLResponse(contents, status_code=200)
-
-# txt = main('우유')
-# print(txt)
-
-@app.post("/item/{items}")
-async def read_item(items):
-    # test = main('우유')
-    # print(item_id)
-    # # test = main(item_id)
-    return f'{items}을(를) 이용한 레시피가 생성되었습니다.'
