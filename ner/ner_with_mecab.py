@@ -184,7 +184,6 @@ def get_tagged_data(path, file_name, ner_set = None):
     # with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
     with open(f'{path}{file_name}', mode='r', encoding='utf8') as f:
 
-
         df = pd.read_csv(f, encoding='utf8')
         data = df.to_numpy()
 
@@ -192,7 +191,7 @@ def get_tagged_data(path, file_name, ner_set = None):
         regex_val = []
 
         for row in tqdm(data):
-            target = f' {row[3]} '# 0: title, 1: url 2: ingredient, 3: directions
+            target = f' {row[0]} '# 0: title, 1: url 2: ingredient, 3: directions
             # unit = [u if u not in ['장'] else f'{u}' for u in row[1].split('@#') ] if isinstance(row[1], str) else []
             unit = [u if u not in ['장'] else f'{u}' for u in row[-4].split('@#') ] if isinstance(row[-4], str) else []
             # qty = row[2].split('@#') if isinstance(row[2], str) else []
@@ -317,10 +316,10 @@ def get_tagged_data(path, file_name, ner_set = None):
 
 
 path = f'{os.path.dirname(__file__)}/data/'
-with open(f'{path}ner_set_1005.csv', mode='r', encoding='utf8') as f:
+with open(f'{path}ner_set_1006.csv', mode='r', encoding='utf8') as f:
     df = pd.read_csv(f, encoding='utf8')
     temp = df.to_numpy()
-    get_tagged_data(path, 'beforeTagged_211005_10000.csv', temp[:,:-1])
+    get_tagged_data(path, 'beforeTagged_211006_298452.csv', temp[:,:-1])
 
 
 def get_BIO_data(path, data):
