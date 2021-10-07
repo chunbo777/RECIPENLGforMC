@@ -1,6 +1,7 @@
 # "main" module, e.g. import app.main
 
 from fastapi import FastAPI
+from core.config import settings
 from fastapi.responses import HTMLResponse
 app = FastAPI()
 # from ..html import getContents
