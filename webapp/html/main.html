@@ -6,59 +6,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <style>
-        /*
-        * Globals
-        */
-
-        /* Links */
-        a,
-        a:focus,
-        a:hover {
-        color: #fff;
-        }
-
-        /* Custom default button */
-        .btn-secondary,
-        .btn-secondary:hover,
-        .btn-secondary:focus {
-        color: rgb(136, 122, 122);
-        text-shadow: none; /* Prevent inheritance from `body` */
-        background-color: #fff;
-        border: .05rem solid #fff;
-        }
-
-
-        /*
-        * Base structure
-        */
-
-        html,
-        body {
-        height: 100%;
-        background-color: #333;
+        html, body {
+            height: 100%;
+            background-color: #333;
         }
 
         body {
-        display: -ms-flexbox;
-        display: -webkit-box;
-        display: flex;
-        -ms-flex-pack: center;
-        -webkit-box-pack: center;
-        justify-content: center;
-        color: #fff;
-        text-shadow: 0 .05rem .1rem rgba(0, 0, 0, .5);
-        box-shadow: inset 0 0 5rem rgba(0, 0, 0, .5);
+           color: #fff;
         }
-
 
     </style>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Latest compiled and minified CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <!-- Latest compiled JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"></script>
-
 </head>
 <script>
     whenSpanClicked = (el)=>{
@@ -67,92 +29,116 @@
             alert('수정중인 식재료를 저장해주세요')
             return
         }
+
         div = document.createElement('div')
         el.parentElement.append(div)
+
         input = document.createElement('input')
         div.append(input)
         input.value = el.innerHTML
-        btn = document.createElement('button')
-        div.append(btn)
-        btn.innerHTML = '저장'
-        btn.onclick =(e)=>{
+
+        save_btn = document.createElement('button')
+        div.append(save_btn)
+        save_btn.innerHTML = '저장'
+        save_btn.onclick =(e)=>{
             span = document.createElement('span')
             e.target.parentElement.parentElement.appendChild(span)
             span.innerHTML = $(e.target.parentElement).find('input')[0].value
             spanclasses = ['primary','secondary','success', 'danger', 'warning', 'info', 'dark']
             span.className = 'badge bg-'+spanclasses[Math.floor(spanclasses.length*Math.random())]
-            span.onclick = (e)=>{
-                whenSpanClicked(e.target)
-            }
             e.target.parentElement.remove()
         }
+
+        del_btn = document.createElement('button')
+        div.append(del_btn)
+        del_btn.innerHTML = '삭제'
+        del_btn.onclick =(e)=>{
+            e.target.parentElement.remove()
+        }
+        
         el.remove()
     }
-    $(()=>{
-        // alert('haha')
-        $('div#params.col-sm-8')
-        $("span.badge").on("dblclick", (e)=>{
-            console.log(e.target)
-            e.target.remove()
-        });
-        $("span.badge").on("click", (e)=>{
-            whenSpanClicked(e.target)
-            // inputs = $(e.parentElement).find('input')
-            // if (inputs.length >0){
-            //     alert('수정중인 식재료를 저장해주세요')
-            //     return
-            // }
-            // div = document.createElement('div')
-            // e.target.parentElement.append(div)
-            // input = document.createElement('input')
-            // div.append(input)
-            // input.value = e.target.innerHTML
-            // btn = document.createElement('button')
-            // div.append(btn)
-            // btn.innerHTML = '저장'
-            // btn.onclick =(e)=>{
-            //     span = document.createElement('span')
-            //     e.target.parentElement.parentElement.appendChild(span)
-            //     span.innerHTML = $(e.target.parentElement).find('input')[0].value
-            //     spanclasses = ['primary','secondary','success', 'danger', 'warning', 'info', 'dark']
-            //     span.className = 'badge bg-'+spanclasses[Math.floor(spanclasses.length*Math.random())]
-            //     e.target.parentElement.remove()
-            // }
-            // e.target.remove()
-        });
 
-        $(".btn.btn-primary").on("click", ()=>{
-            alert("The paragraph was clicked.");
-            const array = $('span.badge')
-            let foods = new Array
-            for (let index = 0; index < array.length; index++) {
-                const element = array[index].innerHTML;
-                foods.push(element)
+    $(()=>{
+        $(document.body).on("click", (e)=>{
+
+            console.log($(e))
+            if(e.target.className.includes('badge') & e.target.tagName == 'SPAN'){
+                // console.log(e.target)
+                // e.target.remove()
+                whenSpanClicked(event.target)
+            }else if (e.target.id.includes('getRecipe') & e.target.tagName == 'BUTTON'){
+                const array = $('span.badge')
+                let foods = new Array
+                for (let index = 0; index < array.length; index++) {
+                    const element = array[index].innerHTML;
+                    foods.push(element)
+                }
+                
+                const xhttp = new XMLHttpRequest();
+                xhttp.onload = function() {
+                    document.getElementById("Recipe").innerHTML = this.responseText;
+                }
+                xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
+
+                xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+                xhttp.send("fname=Henry&lname=Ford");            
+
+            }else if (e.target.id.includes('params') & e.target.tagName == 'DIV'){
+                div = document.createElement('div')
+                e.target.append(div)
+
+                input = document.createElement('input')
+                div.append(input)
+
+                save_btn = document.createElement('button')
+                div.append(save_btn)
+                save_btn.innerHTML = '저장'
+                save_btn.onclick =(ev)=>{
+                    span = document.createElement('span')
+                    ev.target.parentElement.parentElement.appendChild(span)
+                    span.innerHTML = $(ev.target.parentElement).find('input')[0].value
+                    spanclasses = ['primary','secondary','success', 'danger', 'warning', 'info', 'dark']
+                    span.className = 'badge bg-'+spanclasses[Math.floor(spanclasses.length*Math.random())]
+                    // span.onclick = (event)=>{
+                    //     whenSpanClicked(event.target)
+                    // }
+                    ev.target.parentElement.remove()
+                }
+
             }
-            
-            const xhttp = new XMLHttpRequest();
-            xhttp.onload = function() {
-                document.getElementById("Recipe").innerHTML = this.responseText;
-            }
-            xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join('@#'));
-            xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-            xhttp.send("fname=Henry&lname=Ford");          
-        });      
+        });
     })
 </script>
 <body>
     <div class="container">
-        <h1 class='.display-1'>My First Bootstrap Page</h1>
+        <h1 class='.display-1'>셀럽시피&발명식!</h1>
         <p>This is some text.</p>
         <div class="row">
-            <div class="col-sm-4"></div>
+            <div class="col-sm-4">
+                <img class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
+            </div>
             <div class="col-sm-8">
                 <div class="row">
-                    <div class="col-sm-8">NER</div>
-                    <div class="col-sm-4">레시피생성</div>
-                </div>
-                <div class="row">Recipe</div>
+                    <div class="col-sm-8" id="params">
+                        <span class="badge bg-primary">공심채</span>
+                        <span class="badge bg-secondary">간마늘</span>
+                        <span class="badge bg-success">페퍼톤치노</span>
+                        <span class="badge bg-danger">치킨스톡</span>
+                        <span class="badge bg-warning">피쉬소스</span>
+                        <span class="badge bg-info">굴소스</span>
+                        <span class="badge bg-dark">참기름</span>
+                    </div>
+                    <div class="col-sm-4"><button type="button" class="btn btn-primary" id="getRecipe">레시피 생성</button></div>
 
+
+                </div>
+                <div class="row">
+                    <div class="progress">
+                        <div class="progress-bar" style="width:0%">0%</div>
+                    </div>
+                    <div class="row" id='Recipe'>Recipe</div>
+                </div>
             </div>
         </div>
     </div>
