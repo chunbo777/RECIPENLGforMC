@@ -11,22 +11,23 @@ import numpy as np
 class RecipeWithMySqlPipeline:
     def __init__(self):
         self.create_connection()
-        self.create_table()
+        # self.create_table()
     
     def create_connection(self):
         
-        nameserver = None
-        if os.sys.platform =='win32':
-            nameserver = 'localhost'
-        elif os.sys.platform == 'linux':
-            nameserver = '172.31.16.1'# /etc/resolv.conf
+        nameserver = 'localhost'
+        # if os.sys.platform =='win32':
+        #     nameserver = 'localhost'
+        # elif os.sys.platform == 'linux':
+        #     nameserver = '172.31.16.1'# /etc/resolv.conf
             
 
         mydb = mysql.connector.connect(
             charset='utf8'
-            , db='Recipe'
+            , db='recipe'
             , host=nameserver
-            , user="dasomoh"
+            # , user="dasomoh"
+            , user="aws_mysql_lab17"# 연결이 안됨
             , password="1234"
         )
         self.conn = mydb
@@ -135,6 +136,7 @@ class RecipeWithMySqlPipeline:
         self.curr.execute(sql)
         raw_ner_set = self.curr.fetchall()
         return raw_ner_set
+    
             
 
 
@@ -150,12 +152,12 @@ path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 
 # DB에 데이터 저장
 # me = Mecab()
-# sql = RecipeWithMySqlPipeline()
-# with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
-#     jsondata = json.load(fp=f)
-#     for data in tqdm(jsondata):
-#         data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
-#         sql.process_item(data)
+sql = RecipeWithMySqlPipeline()
+with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
+    jsondata = json.load(fp=f)
+    for data in tqdm(jsondata):
+        data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
+        sql.process_item(data)
 
 def process_text(repl_info, target):
     modified_target = []
