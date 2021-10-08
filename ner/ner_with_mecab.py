@@ -7,6 +7,8 @@ from tqdm import tqdm
 from konlpy.tag import Mecab
 from datetime import datetime
 import numpy as np
+import json
+import re
 
 class RecipeWithMySqlPipeline:
     def __init__(self):
@@ -16,16 +18,17 @@ class RecipeWithMySqlPipeline:
     def create_connection(self):
         
         nameserver = 'localhost'
-        # if os.sys.platform =='win32':
-        #     nameserver = 'localhost'
-        # elif os.sys.platform == 'linux':
-        #     nameserver = '172.31.16.1'# /etc/resolv.conf
+        if os.sys.platform =='win32':
+            nameserver = 'localhost'
+        elif os.sys.platform == 'linux':
+            nameserver = '172.30.176.1'# /etc/resolv.conf
             
 
         mydb = mysql.connector.connect(
             charset='utf8'
             , db='recipe'
-            , host=nameserver
+            # , host=nameserver
+            , host='3.37.218.4', port = '3306'
             # , user="dasomoh"
             , user="aws_mysql_lab17"# 연결이 안됨
             , password="1234"
@@ -34,40 +37,40 @@ class RecipeWithMySqlPipeline:
         self.curr = self.conn.cursor(buffered=True)
     
     def create_table(self):        
+        # sql ='''
+        # CREATE TABLE if not exists Recipe (
+        #     Recipeid int NOT NULL AUTO_INCREMENT,
+        #     title varchar(255) NOT NULL,
+        #     link varchar(255),
+        #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        #     PRIMARY KEY (Recipeid)
+        # );
+        # '''
+        # self.curr.execute(sql)
+        # sql ='''
+        # CREATE TABLE if not exists Ingredients (
+        #     IngrId int NOT NULL AUTO_INCREMENT,
+        #     Recipeid int NOT NULL,
+        #     ingredient varchar(255),
+        #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        #     PRIMARY KEY (IngrId),
+        #     FOREIGN KEY (Recipeid) REFERENCES Recipe(Recipeid)
+        # );
+        # '''
+        # self.curr.execute(sql)
+        # sql ='''
+        # CREATE TABLE if not exists Directions (
+        #     Dirid int NOT NULL AUTO_INCREMENT,
+        #     Recipeid int NOT NULL,
+        #     direction varchar(1023),
+        #     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        #     PRIMARY KEY (Dirid),
+        #     FOREIGN KEY (Recipeid) REFERENCES Recipe(Recipeid)
+        # );
+        # '''
+        # self.curr.execute(sql)
         sql ='''
-        CREATE TABLE if not exists Recipe (
-            Recipeid int NOT NULL AUTO_INCREMENT,
-            title varchar(255) NOT NULL,
-            link varchar(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (Recipeid)
-        );
-        '''
-        self.curr.execute(sql)
-        sql ='''
-        CREATE TABLE if not exists Ingredients (
-            IngrId int NOT NULL AUTO_INCREMENT,
-            Recipeid int NOT NULL,
-            ingredient varchar(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (IngrId),
-            FOREIGN KEY (Recipeid) REFERENCES Recipe(Recipeid)
-        );
-        '''
-        self.curr.execute(sql)
-        sql ='''
-        CREATE TABLE if not exists Directions (
-            Dirid int NOT NULL AUTO_INCREMENT,
-            Recipeid int NOT NULL,
-            direction varchar(1023),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            PRIMARY KEY (Dirid),
-            FOREIGN KEY (Recipeid) REFERENCES Recipe(Recipeid)
-        );
-        '''
-        self.curr.execute(sql)
-        sql ='''
-        CREATE TABLE if not exists ner_mecab (
+        CREATE TABLE if not exists temp_ner (
             id int NOT NULL AUTO_INCREMENT,
             Recipeid int NOT NULL,
             ner varchar(1023),
@@ -80,7 +83,8 @@ class RecipeWithMySqlPipeline:
         self.curr.execute(sql)
 
     def process_item(self, item):
-        for k in ['title','ingredients','directions', 'ner_mecab']:
+       
+        for k in ['title', 'link','ingredients','directions','NER']:
             if item[k] is None:
                 break
                 # if k == 'title':# 아예 내용이 없는 경우
@@ -88,13 +92,20 @@ class RecipeWithMySqlPipeline:
                 # else:
                 #     continue
 
-            if isinstance(item[k], str):
+            # if isinstance(item[k], str):
+            #     item[k] = item[k].replace('"','').replace('\\','').strip()
+            # elif isinstance(item[k], list):
+            #     item[k] = [(i[0].replace('"','').replace('\\','').strip(),i[1]) if isinstance(i, tuple) else i.replace('"','').replace('\\','').strip() for i in item[k]]
+
+            if k in ['title', 'link']:
                 item[k] = item[k].replace('"','').replace('\\','').strip()
-            elif isinstance(item[k], list):
-                item[k] = [(i[0].replace('"','').replace('\\','').strip(),i[1]) if isinstance(i, tuple) else i.replace('"','').replace('\\','').strip() for i in item[k]]
+            elif k in ['ingredients','directions','NER']:
+                item[k] = json.loads(item[k])
 
         try:
-            self.store_db(item)
+            if item[item.axes[0][0]] >= 5494:
+                
+                self.store_db(item)
         except Exception:
             traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log/{os.path.basename(__file__)}_log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
             print(item['title'])
@@ -103,18 +114,19 @@ class RecipeWithMySqlPipeline:
         return item
 
     def store_db(self, item):
-
-        sql = f'''INSERT INTO Recipe (title, link) VALUES ("{item['title']}" ,"{item['link']}" );'''
+        sql = f'''INSERT INTO recipe (title, link) VALUES ("{item['title']}" ,"{item['link']}" );'''
         self.curr.execute(sql)
 
         # self.curr.execute('SELECT LAST_INSERT_ID()')
         recipeid = str(self.curr.lastrowid)
 
         for ingredient in item['ingredients']:
-            sql = f' INSERT INTO Ingredients (Recipeid, ingredient) VALUES ("{recipeid}" ,"{ingredient}");'
+            ingredient = re.sub(r'([\\]|["])','',ingredient)
+            sql = f' INSERT INTO ingredients (Recipeid, ingredient) VALUES ("{recipeid}" ,"{ingredient}");'
             self.curr.execute(sql)
         
         for (i, direction) in enumerate(item['directions']):
+            direction = re.sub(r'([\\]|["])','',direction)
             sql = f'INSERT INTO directions (Recipeid, direction) VALUES ("{recipeid}","{direction}");'
             try:
                 self.curr.execute(sql)
@@ -126,11 +138,20 @@ class RecipeWithMySqlPipeline:
                     except Exception:
                         traceback.print_exc(file=open(os.path.dirname(__file__)+f'/log/{os.path.basename(__file__)}_log_{datetime.now().strftime("%Y%m%d")}.txt', mode='a'))
         
-        for ner_mecab in item['ner_mecab']:
-            sql = f'INSERT INTO ner_mecab (Recipeid, ner, pos) VALUES ("{recipeid}","{ner_mecab[0]}","{ner_mecab[1]}");'
+        for ner in item['NER']:
+            ner = re.sub(r'([\\]|["])','',ner)
+            sql = f'INSERT INTO temp_ner (Recipeid, ner) VALUES ("{recipeid}","{ner}");'
             self.curr.execute(sql)
 
         self.conn.commit()
+
+    def store_set(self, target):
+        for word in tqdm(target):
+            word = re.sub(r'([\\]|["])','',word)
+            sql = f'INSERT INTO words_for_tagging (word, cate, pos) VALUES ("{word}","ingr","NER_eng");'
+            self.curr.execute(sql)
+        self.conn.commit()
+
     def automated_raw_tagging_item(self, target):
         sql = f'''select ner, pos from ner_set;'''
         self.curr.execute(sql)
@@ -153,11 +174,16 @@ path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 # DB에 데이터 저장
 # me = Mecab()
 sql = RecipeWithMySqlPipeline()
-with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
-    jsondata = json.load(fp=f)
-    for data in tqdm(jsondata):
-        data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
-        sql.process_item(data)
+import pandas as pd
+df = pd.read_csv('/home/dasomoh88/RECIPENLGforMC/ner/data/full_dataset.csv')
+# ners = set([ner for ners in df['NER'].apply(lambda x: json.loads(x)).values for ner in ners])
+# sql.store_set(ners)
+df.apply(lambda x: sql.process_item(x), axis=1)
+# with open(f'{path}recipes_in_korean.json', mode='r', encoding='utf8') as f:
+#     jsondata = json.load(fp=f)
+#     for data in tqdm(jsondata):
+#         # data['ner_mecab'] = list(set([tup for ingr in data['ingredients'] for tup in me.pos(ingr)]))
+#         sql.process_item(data)
 
 def process_text(repl_info, target):
     modified_target = []
