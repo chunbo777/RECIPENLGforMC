@@ -3,7 +3,7 @@
 from fastapi import FastAPI
 from core.config import settings
 from html.html import getContents
-
+from generation.run_generation import main as gen
 from fastapi.responses import HTMLResponse
 app = FastAPI()
 # from fastapi import APIRouter, Depends, HTTPException
@@ -27,5 +27,6 @@ async def root():
 @app.post("/item/{items}")
 async def read_item(items):
 
-
-    return f'{items}{settings.PROJECT_NAME}을(를) 이용한 레시피가 생성되었습니다.'
+    recipe = gen('milk')
+    # recipe = str(items)
+    return recipe

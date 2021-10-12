@@ -113,7 +113,8 @@ def main(ingredients=None):
     # 20120903
     # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
     #                     help="Path to pre-trained model")
-    parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/model/', type=str, help="Path to pre-trained model")
+    # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/model/', type=str, help="Path to pre-trained model")
+    parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
 
     parser.add_argument("--prompt", type=str, default="")
     # parser.add_argument("--length", type=int, default=20)
