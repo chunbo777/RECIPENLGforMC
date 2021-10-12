@@ -27,6 +27,6 @@ async def root():
 @app.post("/item/{items}")
 async def read_item(items):
 
-    recipe = gen('milk')
-    # recipe = str(items)
+    # recipe = gen('milk')
+    recipe = str(items)
     return recipe
