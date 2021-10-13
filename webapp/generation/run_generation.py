@@ -31,6 +31,7 @@ from transformers import GPT2LMHeadModel, GPT2Tokenizer, PreTrainedTokenizerFast
 
 import os
 
+import json
 
 logging.basicConfig(format = '%(asctime)s - %(levelname)s - %(name)s -   %(message)s',
                     datefmt = '%m/%d/%Y %H:%M:%S',
@@ -102,31 +103,41 @@ def sample_sequence(model, length, context, tokenizer, num_samples=1, temperatur
 
 import re
 
+class AttrDict(dict):
+    def __init__(self, *args, **kwargs):
+        super(AttrDict, self).__init__(*args, **kwargs)
+        self.__dict__ = self
+
 def main(ingredients=None):
-    parser = argparse.ArgumentParser()
+    # parser = argparse.ArgumentParser()
 
-    # 20120903
-    # parser.add_argument("--model_type", default=None, type=str, required=True,
-    #                     help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
-    parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    # # 20120903
+    # # parser.add_argument("--model_type", default=None, type=str, required=True,
+    # #                     help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
+    # parser.add_argument("--model_type", default='gpt2', type=str, help="Model type selected in the list: " + ", ".join(MODEL_CLASSES.keys()))
 
-    # 20120903
-    # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
-    #                     help="Path to pre-trained model")
-    # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/model/', type=str, help="Path to pre-trained model")
-    parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
+    # # 20120903
+    # # parser.add_argument("--model_name_or_path", default=None, type=str, required=True,
+    # #                     help="Path to pre-trained model")
+    # # parser.add_argument("--model_name_or_path", default=f'{os.path.dirname(__file__)}/model/', type=str, help="Path to pre-trained model")
+    # parser.add_argument("--model_name_or_path", default='mbien/recipenlg', type=str, help="Path to pre-trained model")
 
-    parser.add_argument("--prompt", type=str, default="")
-    # parser.add_argument("--length", type=int, default=20)
-    parser.add_argument("--length", type=int, default=2048)
-    parser.add_argument("--temperature", type=float, default=1.0)
-    parser.add_argument("--top_k", type=int, default=0)
-    parser.add_argument("--top_p", type=float, default=0.9)
-    parser.add_argument("--no_cuda", action='store_true',
-                        help="Avoid using CUDA when available")
-    parser.add_argument('--seed', type=int, default=42,
-                        help="random seed for initialization")
-    args = parser.parse_args()
+    # parser.add_argument("--prompt", type=str, default="")
+    # # parser.add_argument("--length", type=int, default=20)
+    # parser.add_argument("--length", type=int, default=2048)
+    # parser.add_argument("--temperature", type=float, default=1.0)
+    # parser.add_argument("--top_k", type=int, default=0)
+    # parser.add_argument("--top_p", type=float, default=0.9)
+    # parser.add_argument("--no_cuda", action='store_true',
+    #                     help="Avoid using CUDA when available")
+    # parser.add_argument('--seed', type=int, default=42,
+    #                     help="random seed for initialization")
+    # args = parser.parse_args()
+    args = AttrDict()
+    args.update({
+        'model_type':'gpt2', 'model_name_or_path':'mbien/recipenlg', 'prompt':'', 'length':2048, 'temperature':1.0
+        , 'top_k':0, 'top_p':0.9, 'no_cuda':'','seed' : 42 
+    })
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     args.n_gpu = torch.cuda.device_count()
@@ -147,7 +158,6 @@ def main(ingredients=None):
     elif args.length < 0:
         args.length = MAX_LENGTH  # avoid infinite loop
 
-    print(args)
     while True:
         if ingredients is None:
             raw_text = args.prompt if args.prompt else input("Comma-separated ingredients, semicolon to close the list >>> ")
@@ -173,22 +183,28 @@ def main(ingredients=None):
             print("Failed to generate, recipe's too long")
             continue
         full_text = prepared_input + text
-        markdown = re.sub("<RECIPE_(START|END)>", "", full_text)
-        recipe_n_title = markdown.split("<TITLE_START>")
-        title = "# " + recipe_n_title[1].replace("<TITLE_END>", "") + " #\n"
-        markdown = recipe_n_title[0].replace("<INPUT_START>", "## Input ingredients ##\n`").replace("<INPUT_END>", "`\n")
-        markdown = markdown.replace("<NEXT_INPUT>", "`\n`").replace("<INGR_START>", "## Ingredients ##\n* ").replace("<NEXT_INGR>", "\n* ").replace("<INGR_END>", "\n")
-        markdown = markdown.replace("<INSTR_START>", "## Instructions ##\n) ").replace("<NEXT_INSTR>", "\n) ").replace("<INSTR_END>", "\n")
-        markdown = re.sub("$ +#", "#", markdown)
-        markdown = re.sub("( +`|` +)", "`", markdown)
-        print(title+markdown)
+        
+        jsonData = {'TITLE':None, 'INPUT':None,'INGR':None,'INSTR':None}
+        for k, v in jsonData.items():
+             tmp = re.split(f'<NEXT_{k}>',re.sub(f'<{k}_START>|<{k}_END>','',re.search(f"<{k}_START>.*<{k}_END>", full_text).group(0)))
+             jsonData.update({k:[i.strip() for i in tmp] if len(tmp)>1 else tmp[0]})
+        # print(jsonData)
+        # markdown = re.sub("<RECIPE_(START|END)>", "", full_text)
+        # recipe_n_title = markdown.split("<TITLE_START>")
+        # title = "# " + recipe_n_title[1].replace("<TITLE_END>", "") + " #\n"
+        # markdown = recipe_n_title[0].replace("<INPUT_START>", "## Input ingredients ##\n`").replace("<INPUT_END>", "`\n")
+        # markdown = markdown.replace("<NEXT_INPUT>", "`\n`").replace("<INGR_START>", "## Ingredients ##\n* ").replace("<NEXT_INGR>", "\n* ").replace("<INGR_END>", "\n")
+        # markdown = markdown.replace("<INSTR_START>", "## Instructions ##\n) ").replace("<NEXT_INSTR>", "\n) ").replace("<INSTR_END>", "\n")
+        # markdown = re.sub("$ +#", "#", markdown)
+        # markdown = re.sub("( +`|` +)", "`", markdown)
+        # print(title+markdown)
         # if args.prompt:
         if args.prompt or ingredients is not None:
             break
-    return title+markdown
+    return jsonData
 
 
 if __name__ == '__main__':
     # main()
-    text = main('우유')
+    text = main('milk')
     print(text)

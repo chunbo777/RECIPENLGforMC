@@ -8,7 +8,7 @@
     <style>
         html, body {
             height: 100%;
-            background-color: #333;
+            /*background-color: #333;*/
         }
 
         body {
@@ -68,6 +68,8 @@
                 // e.target.remove()
                 whenSpanClicked(event.target)
             }else if (e.target.id.includes('getRecipe') & e.target.tagName == 'BUTTON'){
+                document.getElementById("progress").className = 'spinner-border';
+
                 const array = $('span.badge')
                 let foods = new Array
                 for (let index = 0; index < array.length; index++) {
@@ -77,12 +79,41 @@
                 
                 const xhttp = new XMLHttpRequest();
                 xhttp.onload = function() {
-                    document.getElementById("Recipe").innerHTML = this.responseText;
-                }
+                    document.getElementById("progress").className = '';
+                    const jsonData = JSON.parse(JSON.parse(this.responseText))// parse
+
+                    let root = document.getElementById("Recipe")
+                    $(root).empty();
+
+                    for (let k in jsonData){
+                        let div = document.createElement('div')
+                        root.appendChild(div)
+
+                        let h3 = document.createElement('h3')
+                        h3.innerHTML = k
+                        div.appendChild(h3)
+                        let contents = document.createElement('div')
+                        div.appendChild(contents)
+                        if (Array.isArray(jsonData[k])){
+                            for (let n =0 ; n<jsonData[k].length; n++){
+                                let span = document.createElement('span')
+                                contents.appendChild(span)
+                                
+                                span.innerHTML = (n+1)+ ') '+jsonData[k][n]+'<br>'
+                            }
+                        }else{
+                            let span = document.createElement('span')
+                            contents.appendChild(span)
+                            span.innerHTML = jsonData[k]
+                        }// if
+                    }// for (let k in jsonData){
+                }// xhttp.onload = function() {
                 xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
 
                 xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
-                xhttp.send("fname=Henry&lname=Ford");            
+                xhttp.send();
+
+                
 
             }else if (e.target.id.includes('params') & e.target.tagName == 'DIV'){
                 div = document.createElement('div')
@@ -113,7 +144,6 @@
 <body>
     <div class="container">
         <h1 class='.display-1'>셀럽시피&발명식!</h1>
-        <p>This is some text.</p>
         <div class="row">
             <div class="col-sm-4">
                 <img class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
@@ -121,6 +151,9 @@
             <div class="col-sm-8">
                 <div class="row">
                     <div class="col-sm-8" id="params">
+                        <span class="badge bg-secondary">milk</span>
+                        <span class="badge bg-secondary">banana</span>
+                        <!--
                         <span class="badge bg-primary">공심채</span>
                         <span class="badge bg-secondary">간마늘</span>
                         <span class="badge bg-success">페퍼톤치노</span>
@@ -128,15 +161,14 @@
                         <span class="badge bg-warning">피쉬소스</span>
                         <span class="badge bg-info">굴소스</span>
                         <span class="badge bg-dark">참기름</span>
+                        -->
                     </div>
                     <div class="col-sm-4"><button type="button" class="btn btn-primary" id="getRecipe">레시피 생성</button></div>
 
 
                 </div>
                 <div class="row">
-                    <div class="progress">
-                        <div class="progress-bar" style="width:0%">0%</div>
-                    </div>
+                    <div id="progress"></div>
                     <div class="row" id='Recipe'>Recipe</div>
                 </div>
             </div>

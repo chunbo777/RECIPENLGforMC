@@ -86,15 +86,15 @@ def get_test_texts(args, tokenizer):
 
 def get_labels(args):
 
-    # return [label.strip() for label in open(os.path.join(args.data_dir, args.label_file), 'r', encoding='utf-8')]
+    return [label.strip() for label in open(os.path.join(args.data_dir, args.label_file), 'r', encoding='utf-8')]
 
-    # klue 학습 과정 확인중
-    return [
-        'UNK', 'O',#20211001
-        "B-PS", "I-PS", "B-LC", "I-LC", "B-OG", "I-OG",
-        "B-DT", "I-DT", "B-TI", "I-TI", "B-QT", "I-QT",
-        # "O",
-    ]
+    # # klue 학습 과정 확인중
+    # return [
+    #     'UNK', 'O',#20211001
+    #     "B-PS", "I-PS", "B-LC", "I-LC", "B-OG", "I-OG",
+    #     "B-DT", "I-DT", "B-TI", "I-TI", "B-QT", "I-QT",
+    #     # "O",
+    # ]
 
 
 def load_tokenizer(args):

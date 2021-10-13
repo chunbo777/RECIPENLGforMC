@@ -84,8 +84,8 @@ class NaverNerProcessor(object):
             raw_text = f.read().strip()
 
             ## 20211001
-            # raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)# recipe
-            raw_docs = re.split(r"\n\t?\n", raw_text)# klue
+            raw_docs = re.split(r"[\n][#]{2}[\w]+[\n]", raw_text)# recipe
+            # raw_docs = re.split(r"\n\t?\n", raw_text)# klue
             return raw_docs
 
     def _create_examples(self, dataset, set_type):

@@ -3,8 +3,9 @@
 from fastapi import FastAPI
 from core.config import settings
 from html.html import getContents
-from generation.run_generation import main as gen
+from generation.run_generation import main
 from fastapi.responses import HTMLResponse
+import json
 app = FastAPI()
 # from fastapi import APIRouter, Depends, HTTPException
 # from .dependencies import get_token_header
@@ -27,6 +28,10 @@ async def root():
 @app.post("/item/{items}")
 async def read_item(items):
 
-    # recipe = gen('milk')
-    recipe = str(items)
-    return recipe
+    # recipe = str(items)+'!@#$!@#$'
+    recipe = main(items)
+    # recipe = test
+    # recipe = testfunc()
+    # print(recipe)
+    # print(json.dumps(recipe))
+    return json.dumps(recipe)
