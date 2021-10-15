@@ -35,3 +35,12 @@ async def read_item(items):
     # print(recipe)
     # print(json.dumps(recipe))
     return json.dumps(recipe)
+
+
+import uvicorn
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8080, reload=True, access_log=False)
+    
+
