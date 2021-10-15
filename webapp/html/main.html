@@ -108,7 +108,7 @@
                         }// if
                     }// for (let k in jsonData){
                 }// xhttp.onload = function() {
-                xhttp.open("POST", "http://3.37.218.4:8080/item/"+foods.join(', '));
+                xhttp.open("GET", location.href + "ingredients/"+foods.join(', '));
                 // xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
 
                 xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -152,9 +152,6 @@
             <div class="col-sm-8">
                 <div class="row">
                     <div class="col-sm-8" id="params">
-                        <span class="badge bg-secondary">milk</span>
-                        <span class="badge bg-secondary">banana</span>
-                        <!--
                         <span class="badge bg-primary">공심채</span>
                         <span class="badge bg-secondary">간마늘</span>
                         <span class="badge bg-success">페퍼톤치노</span>
@@ -162,7 +159,6 @@
                         <span class="badge bg-warning">피쉬소스</span>
                         <span class="badge bg-info">굴소스</span>
                         <span class="badge bg-dark">참기름</span>
-                        -->
                     </div>
                     <div class="col-sm-4"><button type="button" class="btn btn-primary" id="getRecipe">레시피 생성</button></div>
 

@@ -7,15 +7,6 @@ from generation.run_generation import main
 from fastapi.responses import HTMLResponse
 import json
 app = FastAPI()
-# from fastapi import APIRouter, Depends, HTTPException
-# from .dependencies import get_token_header
-
-# router = APIRouter(
-#     prefix="/items",
-#     tags=["items"],
-#     dependencies=[Depends(get_token_header)],
-#     responses={404: {"description": "Not found"}},
-# )
 
 @app.get("/")
 async def root():
@@ -25,15 +16,11 @@ async def root():
     return HTMLResponse(contents, status_code=200)
 
 
-@app.get("/item/{items}")
-async def read_item(items):
+@app.get("/ingredients/{ingredients}")
+async def read_item(ingredients):
 
-    # recipe = str(items)
-    recipe = main(items)
-    # recipe = test
-    # recipe = testfunc()
-    # print(recipe)
-    # print(json.dumps(recipe))
+    recipe = str(ingredients)
+    # recipe = main(ingredients)
     return json.dumps(recipe)
 
 
