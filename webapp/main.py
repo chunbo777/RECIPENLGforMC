@@ -25,10 +25,10 @@ async def root():
     return HTMLResponse(contents, status_code=200)
 
 
-@app.post("/item/{items}")
+@app.get("/item/{items}")
 async def read_item(items):
 
-    # recipe = str(items)+'!@#$!@#$'
+    # recipe = str(items)
     recipe = main(items)
     # recipe = test
     # recipe = testfunc()
@@ -37,7 +37,9 @@ async def read_item(items):
     return json.dumps(recipe)
 
 
+    
 import uvicorn
+
 if __name__ == "__main__":
     # uvicorn.run(app, host="0.0.0.0", port=8080, reload=True)# You must pass the application as an import string to enable 'reload' or 'workers'.
     uvicorn.run(app, host="0.0.0.0", port=8080)
