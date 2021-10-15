@@ -45,8 +45,8 @@ class Trainer(object):
         if args.write_pred:
             self.test_texts = get_test_texts(args, tokenizer)
             # Empty the original prediction files
-            if os.path.exists(args.pred_dir):
-                shutil.rmtree(args.pred_dir)
+            # if os.path.exists(args.pred_dir):
+            #     shutil.rmtree(args.pred_dir)
 
     # def train(self):
     def train(self, wandb=None):
@@ -162,7 +162,7 @@ class Trainer(object):
             with torch.no_grad():
                 inputs = {'input_ids': batch[0],# eval batchsize, max_sequence
                           'attention_mask': batch[1],# eval batchsize, max_sequence
-                          'labels': batch[3]}## eval batchsize, max_sequence
+                          'labels': batch[3]}## eval batchsize, max_sequence, label이 없으면 오류 발생
                 if self.args.model_type != 'distilkobert':
                     inputs['token_type_ids'] = batch[2]# eval batchsize, max_sequence
                 outputs = self.model(**inputs)

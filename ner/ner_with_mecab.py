@@ -209,7 +209,7 @@ path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 
 # DB에 데이터 저장
 # me = Mecab()
-# sql = RecipeWithMySqlPipeline()
+sql = RecipeWithMySqlPipeline()
 import pandas as pd
 # df = pd.read_csv('/home/tutor/lab17/RECIPENLGforMC/ner/data/full_dataset.csv')
 # ners = set([ner for ners in df['NER'].apply(lambda x: json.loads(x)).values for ner in ners])
@@ -486,8 +486,8 @@ def get_BIO_data(path, data):
 
 # data = sql.data_to_tag()
 # wordSet = sql.words_for_tagging()
-path = f'{os.path.dirname(__file__)}/data/'
-# tag_data(np.asarray(data), np.asarray(wordSet),2)# 0: title, 1: url 2: ingredient, 3: directions
+# path = f'{os.path.dirname(__file__)}/data/'
+# tag_data(np.asarray(data), np.asarray(wordSet),0)# 0: title, 1: url 2: ingredient, 3: directions
 
 df_to_bio = pd.read_csv(f'{path}21101314_tagged_3.csv', encoding='utf8')
 data = df_to_bio.to_numpy() 
