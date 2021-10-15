@@ -162,7 +162,7 @@ if __name__ == '__main__':
     parser.add_argument('--logging_steps', type=int, default=512, help="Log every X updates steps.")
     parser.add_argument('--save_steps', type=int, default=512, help="Save checkpoint every X updates steps.")
 
-    parser.add_argument("--do_train", default=True, action="store_true", help="Whether to run training.")
+    parser.add_argument("--do_train", default=False, action="store_true", help="Whether to run training.")
     parser.add_argument("--do_eval", default=True, action="store_true", help="Whether to run eval on the test set.")
     parser.add_argument("--no_cuda", action="store_true", help="Avoid using CUDA when available")
 

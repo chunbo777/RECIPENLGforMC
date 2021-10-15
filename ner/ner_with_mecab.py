@@ -624,12 +624,12 @@ def get_BIO_data(path, data):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 
-# data = sql.data_to_tag()
-# wordSet = sql.words_for_tagging()
+data = sql.data_to_tag()
+wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
-# tag_data(np.asarray(data), np.asarray(wordSet),2)# 0: title, 1: url 2: ingredient, 3: directions
+tag_data(np.asarray(data), np.asarray(wordSet),0)# 0: title, 1: url 2: ingredient, 3: directions
 
-df_to_bio = pd.read_csv(f'{path}21101313_tagged_2.csv', encoding='utf8')
-data = df_to_bio.to_numpy() 
-get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
+# df_to_bio = pd.read_csv(f'{path}21101313_tagged_2.csv', encoding='utf8')
+# data = df_to_bio.to_numpy() 
+# get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 
