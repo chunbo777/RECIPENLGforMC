@@ -117,6 +117,8 @@ def main(ingredients=None):
         , 'prompt':'', 'length':2048, 'temperature':1.0, 'top_k':0, 'top_p':0.9, 'no_cuda':'','seed' : 42 
     })
 
+    print(args)
+
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     args.n_gpu = torch.cuda.device_count()
 

@@ -28,7 +28,7 @@ class RecipeWithMySqlPipeline:
             charset='utf8'
             , db='recipe'
             # , host=nameserver
-            , host='3.37.218.4', port = '3306'
+            , host='3.37.218.4', port = '3306'# team서버에서는 연결이 안됨#Authentication plugin 'caching_sha2_password' cannot be loaded
             # , user="dasomoh"
             , user="aws_mysql_lab17"# 연결이 안됨
             , password="1234"
@@ -155,14 +155,17 @@ class RecipeWithMySqlPipeline:
         self.conn.commit()
 
     
-    def data_to_tag(self):
+    def data_to_tag(self, limit):
+        lim = ''
+        if limit is not None :
+            lim = f' limit {str(limit)}'
+        
         sql = f'''
         with 
         A as (
             select max(Recipeid) Recipeid, title, link from recipe 
             where created_at < 20211006 and in_use =1
-            group by title, link 
-            limit 20000
+            group by title, link {lim}
             )
         , B as ( select group_concat(B.ingredient  SEPARATOR ' ') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
         , C as ( select group_concat(B.direction  SEPARATOR ' ') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
@@ -189,8 +192,8 @@ class RecipeWithMySqlPipeline:
         select max(id) id,word,cate, max(created_at) created_at from words_for_tagging where in_use =1 group by word, cate;
         '''
 
-        self.curr.execute(sql)
-        words_for_tagging = self.curr.fetchall()
+        self.curr.execute(sql)# query 수행
+        words_for_tagging = self.curr.fetchall()# query 결과 추출
         return words_for_tagging
     
     
@@ -203,13 +206,13 @@ class RecipeWithMySqlPipeline:
 #     # jsondata = json.load(fp=f)
 #     # df = pd.read_json(f)
 
-path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
+# path = '/home/dasomoh88/RECIPENLGforMC/crawling_prac/recipeKR/data/'
 # with open(f'{path}recipes_in_korean.json', mode='w', encoding='utf8') as f:
 #     json.dump(jsondata, fp=f)
 
 # DB에 데이터 저장
 # me = Mecab()
-sql = RecipeWithMySqlPipeline()
+# sql = RecipeWithMySqlPipeline()
 import pandas as pd
 # df = pd.read_csv('/home/tutor/lab17/RECIPENLGforMC/ner/data/full_dataset.csv')
 # ners = set([ner for ners in df['NER'].apply(lambda x: json.loads(x)).values for ner in ners])
@@ -234,7 +237,7 @@ def process_text(repl_info, target):
             tmp1 =  target[repl_info['loc'][i-1][1]: repl_info['loc'][i][0]]
             tmp2 =  target[repl_info['loc'][i][1]:]
             modified_target.extend([tmp1, repl,tmp2])
-    modified_target = ' '.join(modified_target)
+    modified_target = ''.join(modified_target)
     return modified_target
 
 
@@ -278,7 +281,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             # regex_val.append([target, regex, row[1], row[-1],'QtyAndUnit'])# 정규식 검정용
         else:
             modified_target = ' '+process_text(repl_info, target)
-
+            
         ingr = row[-2].split('@#') if isinstance(row[-2], str) else []# 식재료
         
         # regex_For_Ingr = f'((\w*|ㄱ-힣*)*({"|".join(ingr)})(\w*|ㄱ-힣*)*)'
@@ -307,7 +310,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
         if tagged_target == '':
             continue
         else:# tagging이 된 data에서 추가로 tagging 할 여지가 있는지 확인
-            regex_val.append([re.sub('[<][\w|ㄱ-힣]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
+            regex_val.append([re.sub('[<][/|\w|ㄱ-힣]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
             tagged_data.append([row[-1],target,tagged_target.replace('@#','')])
 
     m = Mecab()
@@ -335,6 +338,9 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                 if entity_candidate in ['']:
                     continue
                 isAlreadyInSet = False
+
+                # 임시 주석처리
+
                 if entity_candidate in words_for_tagging[:,1]:
                     for info_for_tagging in words_for_tagging:
                         # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] in ['ingr']:
@@ -374,9 +380,12 @@ def tag_data(data, words_for_tagging = None, target_index=2):
     if len(rel_set) >0:
         rel_set = sorted(rel_set, key=lambda query:  query.split(';')[-1]+re.search('\(([\d]|[,]|[\s])+\)',query).group(0).split(',')[1])
         pd.DataFrame(rel_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_rel_to_add_{len(rel_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
-
-    pd.DataFrame(tagged_data).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_tagged_{target_index}.csv', mode='w', encoding='utf8'), header=False, index=False )
-    print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_tagged_{target_index}.csv')
+   
+    save_key = 'title' if target_index ==0 else 'ingredient' if target_index ==2 else 'directions'
+    filename = f'{datetime.today().strftime("%y%m%d%H")}_tagged_{save_key}.csv'
+    pd.DataFrame(tagged_data).to_csv(open(f'{path}{filename}', mode='w', encoding='utf8'), header=False, index=False )
+    print(f'SAVED!! ######## {path}{filename}')
+    return filename
 
 def get_tagged_data(path, file_name, words_for_tagging = None):
     # with open(f'{path}0925_ner_298452_1.csv', mode='r', encoding='utf8') as f:
@@ -385,9 +394,10 @@ def get_tagged_data(path, file_name, words_for_tagging = None):
         df = pd.read_csv(f, encoding='utf8')
         data = df.to_numpy()
         
-        tag_data(data, words_for_tagging)
+        filename_tagged = tag_data(data, words_for_tagging)
+        return filename_tagged
 
-def get_BIO_data(path, data):
+def get_BIO_data(path, data, col_type):
     modified_data = []
     for row in tqdm(data):
         target = row[-1]
@@ -465,9 +475,11 @@ def get_BIO_data(path, data):
     #     jsonData = json.dumps(parsed, indent=4, ensure_ascii=False)
     #     f.write(jsonData)
     # print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio.json')
-
+    # save_key = 'title' if col_type ==0 else 'ingredient' if col_type ==2 else 'directions'
+    save_key = col_type 
     for k, v in data.items():
-        with open(f'{path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv', mode='a', encoding='utf8') as f:
+        file_name_to_save = f'{datetime.today().strftime("%y%m%d%H")}_bio_{save_key}_{k}.tsv'
+        with open(f'{path}{file_name_to_save}', mode='a', encoding='utf8') as f:
             for row in tqdm(v):
                 for el in row:
                     f.write(f'\n')
@@ -479,17 +491,45 @@ def get_BIO_data(path, data):
                         f.write(f'##{el}')
                     elif isinstance(el, int):
                         f.write(f'##{str(el)}')
-        print(f'SAVED!! ######## {path}{datetime.today().strftime("%y%m%d%H")}_bio_{k}.tsv')
+        print(f'SAVED!! ######## {path}{file_name_to_save}')
 
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
+sql = RecipeWithMySqlPipeline()
+data = sql.data_to_tag(10)
+wordSet = sql.words_for_tagging()
+path = f'{os.path.dirname(__file__)}/data/'
+totaldata = {}
+for i in [0, 2,3]:#0: title, 1: url 2: ingredient, 3: directions
+    filename_tagged = tag_data(np.asarray(data), np.asarray(wordSet),i)# 0: title, 1: url 2: ingredient, 3: directions
 
-# data = sql.data_to_tag()
-# wordSet = sql.words_for_tagging()
-# path = f'{os.path.dirname(__file__)}/data/'
-# tag_data(np.asarray(data), np.asarray(wordSet),0)# 0: title, 1: url 2: ingredient, 3: directions
+    df_to_bio = pd.read_csv(f'{path}{filename_tagged}', encoding='utf8')
+    # totaldata.append(df_to_bio.to_numpy())
+    totaldata.update({i :df_to_bio.to_numpy()})
+    # get_BIO_data(path, data, i)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 
-df_to_bio = pd.read_csv(f'{path}21101314_tagged_3.csv', encoding='utf8')
-data = df_to_bio.to_numpy() 
-get_BIO_data(path, data)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
+def func(param):# A,B,C >> A,B,C,AB,AC,BC,ABC
+    if len(param)>1:
+        result = []
+        for i in func(param[1:]):
+            for j in [param[:1],[]]:
+                result.append(i + j)
+        return result
+    elif(len(param)==1):
+        return param, []
+
+# for indexes in func([i for i in range(3)]):
+for indexes in func([0, 2,3]):
+    an_array = None
+    for idx in indexes:
+        if isinstance(an_array,np.ndarray):
+            an_array = np.append(an_array, totaldata[idx], 0)
+        else:
+            an_array = totaldata[idx]
+    
+    print(an_array.shape if isinstance(an_array,np.ndarray) else indexes)
+    if isinstance(an_array,np.ndarray):
+        types = '_'.join(['title' if i ==0 else 'ingredient' if i ==2 else 'directions' for i in indexes])
+        get_BIO_data(path, an_array, types)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
+
 
