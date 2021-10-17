@@ -102,6 +102,7 @@ def sample_sequence(model, length, context, tokenizer, num_samples=1, temperatur
     return generated
 
 import re
+from datetime import datetime
 
 class AttrDict(dict):
     def __init__(self, *args, **kwargs):
@@ -118,6 +119,9 @@ def main(ingredients=None):
     })
 
     print(args)
+    start = datetime.now()
+    print('start : ', start)
+
 
     args.device = torch.device("cuda" if torch.cuda.is_available() and not args.no_cuda else "cpu")
     args.n_gpu = torch.cuda.device_count()
@@ -168,9 +172,12 @@ def main(ingredients=None):
         for k, v in jsonData.items():
              tmp = re.split(f'<NEXT_{k}>',re.sub(f'<{k}_START>|<{k}_END>','',re.search(f"<{k}_START>.*<{k}_END>", full_text).group(0)))
              jsonData.update({k:[i.strip() for i in tmp] if len(tmp)>1 else tmp[0]})
-
         if args.prompt or ingredients is not None:
             break
+
+    end = datetime.now()
+    print('end : ', end)
+    print('time : ', start - end)
     return jsonData
 
 
