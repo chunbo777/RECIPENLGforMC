@@ -189,7 +189,7 @@ class RecipeWithMySqlPipeline:
 
     def words_for_tagging(self):
         sql = f'''
-        select max(id) id,word,cate, max(created_at) created_at from words_for_tagging where in_use =1 group by word, cate;
+        select max(id) id,word,cate, max(created_at) created_at from words_for_tagging where in_use =1 and pos like 'fooddb' group by word, cate;
         '''
 
         self.curr.execute(sql)# query 수행
@@ -325,8 +325,8 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             # print(regex__)
             continue
         # text = re.sub('(<[ㄱ-힣|\w|\d]*:[UNIT|QTY]*>||[(]|[)]|[<]|[>]|[방][법]|[\s]|[\d]|[〈]|[〉]|[♩]|[+]|[:]|[·]|[,]|[!]|[~]|[?]|[♬]|[#]|[-]|[♥]|[♡]|[★]|[☆]|[♪]|[/]|[&]|[|]|[*]|[ﾉ]|[ω]|[.])+',' ',target.replace(']','').replace('[','').replace("'",'').replace("^",'').strip())
-        regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
         target = target.replace(']','').replace('[','').replace("'",'').strip()
+        regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
         text = re.sub(f"([ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]{'|['+']|['.join(regtmp)+']'})+",' ',target)
          
         # for entity_candidate in re.split(' ',text):
@@ -345,9 +345,12 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                     for info_for_tagging in words_for_tagging:
                         # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] in ['ingr']:
                         if info_for_tagging[1]==entity_candidate and info_for_tagging[2] not in ['ingr']:
-                            target = re.sub('\n',' ',target)
+                            found = re.search(f'(\S)*.?{entity_candidate}.?(\S)*', target)
+                            if found is None:
+                                break
                             relation_info.append(
-                                f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{entity_candidate.strip()}, {target} #### {url}")
+                                # f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{entity_candidate.strip()}, {target} #### {url}")
+                                f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{entity_candidate.strip()}, {found.group(0)}")
                                 # f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {k[0]});  select * from rel_btw_recipe_and_ner where NER_id =  {recipe_id}")
                             isAlreadyInSet = True
                             break
@@ -360,21 +363,24 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                             , '한끼식사', '생일', '컵케이크', '전부치는것', '생생정보', '요리', '느낄수'
                             , '나무','레시피','트리','영양','하트','주말','OK','그후','기타','깜짝물','끝난','끝부분','노릇노릇'
                             ,'주세요','후','모두','한번','가로세로','고깃결','고루','그걸','다룰','다음','대략','대충','두세번'
-                            , '분할','살짝']:# 20211012
+                            , '분할','살짝', '건강']:# 20211012
                         if k in entity_candidate:
                             isAlreadyInSet = True
                             break
 
                 if not isAlreadyInSet:# 기존에 포함되지 않았던것
                     # if m.pos(entity_candidate.strip())[-1][-1][0] =='N': # 맨 끝 형태소가 명사계열로 확인되는 경우(~만들기, ~ 해보기 등과 같은 단어가 많이 넘어옴)
-                    target = re.sub('\n',' ',target)
-                    ingr_to_add_on_set.append(
-                        f"INSERT INTO words_for_tagging (word, pos, cate) values ('{entity_candidate.strip()}','custom','ingr');##{target} #### {url}")
+
+                    found = re.search(f'(\S)*.?{entity_candidate}.?(\S)*', target)
+                    if found is not None:
+                        ingr_to_add_on_set.append(
+                            f"INSERT INTO words_for_tagging (word, pos, cate) values ('{entity_candidate.strip()}','custom','ingr');##{found.group()}")
 
     ingr_set = set(ingr_to_add_on_set)# 중복제거
     if len(ingr_set) >0:
         ingr_set = sorted(ingr_set, key=lambda query: [i.group(0) for i in re.finditer("\(([\w]|[ㄱ-힣]|[,]|[\s]|['])*\)",query)][1])
         pd.DataFrame(ingr_set).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_ingr_to_add_{len(ingr_set)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='\t' )
+
 
     rel_set = set(relation_info)# 중복제거
     if len(rel_set) >0:
@@ -496,11 +502,11 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-data = sql.data_to_tag(10)
+data = sql.data_to_tag(10000)
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}
-for i in [0, 2,3]:#0: title, 1: url 2: ingredient, 3: directions
+for i in [0, 2]:#0: title, 1: url 2: ingredient, 3: directions
     filename_tagged = tag_data(np.asarray(data), np.asarray(wordSet),i)# 0: title, 1: url 2: ingredient, 3: directions
 
     df_to_bio = pd.read_csv(f'{path}{filename_tagged}', encoding='utf8')
@@ -518,18 +524,17 @@ def func(param):# A,B,C >> A,B,C,AB,AC,BC,ABC
     elif(len(param)==1):
         return param, []
 
-# for indexes in func([i for i in range(3)]):
-for indexes in func([0, 2,3]):
-    an_array = None
-    for idx in indexes:
-        if isinstance(an_array,np.ndarray):
-            an_array = np.append(an_array, totaldata[idx], 0)
-        else:
-            an_array = totaldata[idx]
+# for indexes in func([0, 2,3]):
+#     an_array = None
+#     for idx in indexes:
+#         if isinstance(an_array,np.ndarray):
+#             an_array = np.append(an_array, totaldata[idx], 0)
+#         else:
+#             an_array = totaldata[idx]
     
-    print(an_array.shape if isinstance(an_array,np.ndarray) else indexes)
-    if isinstance(an_array,np.ndarray):
-        types = '_'.join(['title' if i ==0 else 'ingredient' if i ==2 else 'directions' for i in indexes])
-        get_BIO_data(path, an_array, types)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
+#     print(an_array.shape if isinstance(an_array,np.ndarray) else indexes)
+#     if isinstance(an_array,np.ndarray):
+#         types = '_'.join(['title' if i ==0 else 'ingredient' if i ==2 else 'directions' for i in indexes])
+#         get_BIO_data(path, an_array, types)#f'{path}{datetime.today().strftime("%y%m%d%H%M")}_bio.tsv'
 
 
