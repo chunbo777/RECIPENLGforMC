@@ -190,8 +190,8 @@ class RecipeWithMySqlPipeline:
             where created_at < 20211006 and in_use =1
             group by title, link {lim}
             )
-        , B as ( select group_concat(B.ingredient  SEPARATOR ' ') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
-        , C as ( select group_concat(B.direction  SEPARATOR ' ') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
+        , B as ( select group_concat(B.ingredient  SEPARATOR '@#') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
+        , C as ( select group_concat(B.direction  SEPARATOR '@#') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
         , D as ( select A.Recipeid, B.word, B.cate, B.pos from rel_btw_recipe_and_ner A left join words_for_tagging B on A.NER_id = B.id where B.in_use =1 )
         -- , ingr as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where  D.cate = 'ingr' group by A.Recipeid)
         , unit as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where D.cate = 'unit' group by A.Recipeid)
@@ -290,12 +290,12 @@ def tag_data(data, words_for_tagging = None, target_index=2):
 
         for target in row[target_index].split('@#'):# 0: title, 1: url 2: ingredient, 3: directions
             target = f' {target} '
-            regex_For_Qty = f'([\d\s]+[,|/|.]*[\d]*|({"|".join(qty)})+)'#수량
+            regex_For_Qty = f'(([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])|({"|".join(qty)  if len(qty) >0 else "@#$" }))+'#수량
             # regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'#단위
-            regex_For_Unit = f'({"|".join(unit)})'#단위
+            regex_For_Unit = f'({"|".join(unit) if len(unit) >0 else "@#$" })'#단위
             regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
             repl_info= {'loc':[], 'repl':[]}
-            # if row[-1] == 31:
+            # if row[-1] == 13:#자몽<2:QTY>개 설탕<400:QTY>g 
             #     print()
             for found in re.finditer(regex, target):
                 if found is None or found.group().strip()=='':
@@ -309,6 +309,8 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                         matched__ = matched_.group().strip()
                         if matched__ !='':
                             repl += f'<{matched__}:{k}>'# 중복 대체 연산 방지
+                    else:
+                        print()
                 repl_info['loc'].append(found.span())#국간장 = 국간+장
                 repl_info['repl'].append(repl)# 수량, 단위 정보 한번에
             if len(repl_info['repl']) ==0:
@@ -331,7 +333,6 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                         repl = f'<{matched}:INGR>'
                         repl_info['loc'].append(found.span())
                         repl_info['repl'].append(repl)
-
             if len(repl_info['repl']) !=0:
                 tagged_target = process_text(repl_info, modified_target)
             else:
@@ -343,7 +344,6 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                 regex_val.append([re.sub('[<][/|\w|ㄱ-힣]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 # regex_val.append([target, regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 tagged_data.append([row[-1],target,tagged_target.replace('@#','')])
-
     m = Mecab()
     ## insert 구문 생성
     ## 식재료가 제대로 tagging 되지 않은 경우
@@ -355,9 +355,10 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             # print(target, cate)
             # print(regex__)
             continue
-
+        # if int(recipe_id) == 3451:
+        #     print()
         units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
-        regex_For_Qty = f'([\d]+[,|/|.]?[\d]*)'#수량
+        regex_For_Qty = f'([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
         regex_For_Unit =  f'({"|".join(sorted(set(units_for_tagging[:,1]), key=lambda unit: len(unit),reverse=True))})'#단위
         regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
         for found in re.finditer(regex, target.strip()):
@@ -433,7 +434,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
    
     save_key = 'title' if target_index ==0 else 'ingredient' if target_index ==2 else 'directions'
     filename = f'{datetime.today().strftime("%y%m%d%H")}_tagged_{save_key}.csv'
-    pd.DataFrame(tagged_data).to_csv(open(f'{path}{filename}', mode='w', encoding='utf8'), header=False, index=False )
+    pd.DataFrame(np.asarray(tagged_data)[:,[0,-1]]).to_csv(open(f'{path}{filename}', mode='w', encoding='utf8'), header=False, index=False)
     print(f'SAVED!! ######## {path}{filename}')
     return filename
 
@@ -544,7 +545,7 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-data = sql.data_to_tag(51200)
+data = sql.data_to_tag(50000)
 # data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
