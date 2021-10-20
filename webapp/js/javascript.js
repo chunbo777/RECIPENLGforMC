@@ -67,7 +67,7 @@ $(()=>{
             e.target.innerHTML += 'Loading..'
             e.target.disabled = true
 
-            const array = $('span.badge')
+            const array =  $('div#params span.badge')
             let foods = new Array
             for (let index = 0; index < array.length; index++) {
                 const element = array[index].innerHTML;
