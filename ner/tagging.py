@@ -293,7 +293,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             regex_For_Qty = f'(([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])|({"|".join(qty)  if len(qty) >0 else "@#$" }))+'#수량
             # regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'#단위
             regex_For_Unit = f'({"|".join(unit) if len(unit) >0 else "@#$" })'#단위
-            regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
+            regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
             repl_info= {'loc':[], 'repl':[]}
             # if row[-1] == 13:#자몽<2:QTY>개 설탕<400:QTY>g 
             #     print()
@@ -360,7 +360,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
         units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
         regex_For_Qty = f'([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
         regex_For_Unit =  f'({"|".join(sorted(set(units_for_tagging[:,1]), key=lambda unit: len(unit),reverse=True))})'#단위
-        regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}'
+        regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
         for found in re.finditer(regex, target.strip()):
             if found is None or found.group().strip()=='':
                 continue
@@ -545,8 +545,8 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-data = sql.data_to_tag(50000)
-# data = sql.data_to_tag()
+# data = sql.data_to_tag(100000)
+data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}
