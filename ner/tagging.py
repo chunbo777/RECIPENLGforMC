@@ -208,7 +208,8 @@ class RecipeWithMySqlPipeline:
         -- left join ingr on A.Recipeid = ingr.Recipeid
         left join unit on A.Recipeid = unit.Recipeid
         left join qty on A.Recipeid = qty.Recipeid
-        where B.ingr is not null
+        where B.ingr is not null 
+        -- and A.Recipeid > 160117
         -- and ingr.word is not null 
         ;
         '''
@@ -545,8 +546,8 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-# data = sql.data_to_tag(100000)
-data = sql.data_to_tag()
+data = sql.data_to_tag(160000)
+# data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}
