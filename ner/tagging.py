@@ -208,8 +208,13 @@ class RecipeWithMySqlPipeline:
         -- left join ingr on A.Recipeid = ingr.Recipeid
         left join unit on A.Recipeid = unit.Recipeid
         left join qty on A.Recipeid = qty.Recipeid
+<<<<<<< HEAD
         where B.ingr is not null 
         -- and A.Recipeid > 160117
+=======
+        where B.ingr is not null
+        and A.Recipeid > 160117
+>>>>>>> origin/main
         -- and ingr.word is not null 
         ;
         '''
