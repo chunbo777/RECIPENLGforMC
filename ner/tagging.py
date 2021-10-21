@@ -546,13 +546,8 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-<<<<<<< HEAD
 data = sql.data_to_tag(128)
 # data = sql.data_to_tag()
-=======
-# data = sql.data_to_tag(160000)
-data = sql.data_to_tag()
->>>>>>> origin/main
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}
