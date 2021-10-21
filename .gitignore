@@ -146,3 +146,4 @@ output/
 wandb/
 preds/
 model/
+resources/
