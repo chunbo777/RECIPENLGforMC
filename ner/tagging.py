@@ -180,44 +180,40 @@ class RecipeWithMySqlPipeline:
         left join ingr on A.Recipeid = ingr.Recipeid
         left join unit on A.Recipeid = unit.Recipeid
         left join qty on A.Recipeid = qty.Recipeid
-        where ingr.word is not null and B.ingr is not null
+        where B.ingr is not null 
+        -- and ingr.word is not null
         '''
 
-        sql = f'''
-        with 
-        A as (
-            select max(Recipeid) Recipeid, title, link from recipe 
-            where created_at < 20211006 and in_use =1
-            group by title, link {lim}
-            )
-        , B as ( select group_concat(B.ingredient  SEPARATOR '@#') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
-        , C as ( select group_concat(B.direction  SEPARATOR '@#') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
-        , D as ( select A.Recipeid, B.word, B.cate, B.pos from rel_btw_recipe_and_ner A left join words_for_tagging B on A.NER_id = B.id where B.in_use =1 )
-        -- , ingr as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where  D.cate = 'ingr' group by A.Recipeid)
-        , unit as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where D.cate = 'unit' group by A.Recipeid)
-        , qty as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where D.cate = 'qty' group by A.Recipeid)
-        select A.title, A.link
-        , B.ingr
-        , C.dir, unit.word unit, qty.word qty
-        , "" ingr
-        -- , ingr.word ingr
-        , B.Recipeid 
-        from  A
-        left join B on A.Recipeid = B.Recipeid
-        left join C on A.Recipeid = C.Recipeid
-        -- left join ingr on A.Recipeid = ingr.Recipeid
-        left join unit on A.Recipeid = unit.Recipeid
-        left join qty on A.Recipeid = qty.Recipeid
-<<<<<<< HEAD
-        where B.ingr is not null 
-        -- and A.Recipeid > 160117
-=======
-        where B.ingr is not null
-        and A.Recipeid > 160117
->>>>>>> origin/main
-        -- and ingr.word is not null 
-        ;
-        '''
+        # sql = f'''
+        # with 
+        # A as (
+        #     select max(Recipeid) Recipeid, title, link from recipe 
+        #     where created_at < 20211006 and in_use =1
+        #     group by title, link {lim}
+        #     )
+        # , B as ( select group_concat(B.ingredient  SEPARATOR '@#') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
+        # , C as ( select group_concat(B.direction  SEPARATOR '@#') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
+        # , D as ( select A.Recipeid, B.word, B.cate, B.pos from rel_btw_recipe_and_ner A left join words_for_tagging B on A.NER_id = B.id where B.in_use =1 )
+        # -- , ingr as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where  D.cate = 'ingr' group by A.Recipeid)
+        # , unit as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where D.cate = 'unit' group by A.Recipeid)
+        # , qty as ( select group_concat(D.word SEPARATOR '@#') word, A.Recipeid from A left join D on A.Recipeid = D.Recipeid where D.cate = 'qty' group by A.Recipeid)
+        # select A.title, A.link
+        # , B.ingr
+        # , C.dir, unit.word unit, qty.word qty
+        # , "" ingr
+        # -- , ingr.word ingr
+        # , B.Recipeid 
+        # from  A
+        # left join B on A.Recipeid = B.Recipeid
+        # left join C on A.Recipeid = C.Recipeid
+        # -- left join ingr on A.Recipeid = ingr.Recipeid
+        # left join unit on A.Recipeid = unit.Recipeid
+        # left join qty on A.Recipeid = qty.Recipeid
+        # where B.ingr is not null 
+        # -- and A.Recipeid > 160117
+        # -- and ingr.word is not null 
+        # ;
+        # '''
 
         self.curr.execute(sql)
         data_to_tag = self.curr.fetchall()
@@ -225,7 +221,11 @@ class RecipeWithMySqlPipeline:
 
     def words_for_tagging(self):
         sql = f'''
-        select id,word,cate, created_at from words_for_tagging where in_use =1; 
+        select id,REGEXP_REPLACE(word, '[\\s]+', ' ') word, cate, created_at 
+        from words_for_tagging 
+        where in_use =1
+        -- and cate !='ingr' or (cate = 'ingr' and pos like 'fooddb%')
+        ; 
         '''
 
         self.curr.execute(sql)# query 수행
@@ -326,7 +326,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                 modified_target = ' '+process_text(repl_info, target)
             ingr = row[-2].split('@#') if isinstance(row[-2], str) else []# 식재료
             # regex_For_Ingr = f'((\w*|ㄱ-힣*)*({"|".join(ingr)})(\w*|ㄱ-힣*)*)'
-            regex_For_Ingr = f'({"|".join(ingr)})+'
+            regex_For_Ingr = f'({"|".join(ingr) if len(ingr) > 1 or (len(ingr)==1 and ingr[0].strip() !="") else "@#$"})+'
             repl_info= {'loc':[], 'repl':[]}
             for found in re.finditer(regex_For_Ingr, modified_target):
                 if found is None or found.group().strip()=='':
@@ -347,7 +347,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             if tagged_target == '':
                 continue
             else:# tagging이 된 data에서 추가로 tagging 할 여지가 있는지 확인
-                regex_val.append([re.sub('[<][/|\w|ㄱ-힣]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
+                regex_val.append([re.sub('[<][^<]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 # regex_val.append([target, regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 tagged_data.append([row[-1],target,tagged_target.replace('@#','')])
     m = Mecab()
@@ -381,22 +381,24 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                         relation_info.append(
                             f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {units_for_tagging[units_for_tagging[:,1]==matched__][:,0][0]});##{matched__}, {found_.group(0)}")
 
-        ingr_for_tagging = words_for_tagging[words_for_tagging[:,2]=="ingr"]
         target = target.replace(']','').replace('[','').replace("'",'').strip()
-        regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
-        text = re.sub(f"([ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]{'|['+']|['.join(regtmp)+']'})+",' ',target)
+        # regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
+        # text = re.sub(f"([ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]{'|['+']|['.join(regtmp)+']'})+",' ',target).strip()
         # text = ' '.join([i[0] for i in m.pos(text.strip()) if i[-1][0] not in ['J','V','E']])
         isAlreadyInSet = False
         # 임시주석처리
-        # for info_for_tagging in words_for_tagging[words_for_tagging[:,2]=='ingr']:
-        #     if info_for_tagging[1] in text.strip():
-        #     # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] not in ['ingr']:
-        #         if re.search(f'(\s{info_for_tagging[1]}|{info_for_tagging[1]}\s)', target) is None: continue
-        #         found = re.search(f'(\S)*.?{info_for_tagging[1]}.?(\S)*', target)
-        #         relation_info.append(
-        #             f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{info_for_tagging[1]}, {found.group(0)}")
-        #         isAlreadyInSet = True
-        #         # break
+        for info_for_tagging in sorted(words_for_tagging[words_for_tagging[:,2]=="ingr"], key=lambda x: len(x[1]), reverse=True):
+            if info_for_tagging[1] in target.strip():
+            # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] not in ['ingr']:
+                if re.search(f'(\s{info_for_tagging[1]}|{info_for_tagging[1]}\s)', target) is None: continue
+                found = re.search(f'(\S)*.?{info_for_tagging[1]}.?(\S)*', target)
+                relation_info.append(
+                    f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{info_for_tagging[1]}, {found.group(0)}")
+                target = re.sub(f'(\S)*.?{info_for_tagging[1]}.?(\S)*','',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
+                if re.search(f'[ㄱ-힣]+', target) is None: break
+                # isAlreadyInSet = True
+                # break
+        # 새로운 ingr 추가
         # for temp in text.split():
         #     if temp not in ['',]:
         #         entity_candidate = ' '.join([i[0] for i in m.pos(temp.strip()) if i[-1] in ['NNG','NNP','NNB','NNBC','NR','NP']])
@@ -551,8 +553,8 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-# data = sql.data_to_tag(160000)
-data = sql.data_to_tag()
+data = sql.data_to_tag(128)
+# data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}

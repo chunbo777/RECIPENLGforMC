@@ -44,6 +44,7 @@ whenSpanClicked = (root, text)=>{
 }
 
 $(()=>{
+
     $(document.body).on("click", (e)=>{
 
         console.log($(e))
