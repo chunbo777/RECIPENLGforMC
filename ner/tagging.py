@@ -208,8 +208,13 @@ class RecipeWithMySqlPipeline:
         -- left join ingr on A.Recipeid = ingr.Recipeid
         left join unit on A.Recipeid = unit.Recipeid
         left join qty on A.Recipeid = qty.Recipeid
+<<<<<<< HEAD
+        where B.ingr is not null 
+        -- and A.Recipeid > 160117
+=======
         where B.ingr is not null
         and A.Recipeid > 160117
+>>>>>>> origin/main
         -- and ingr.word is not null 
         ;
         '''
@@ -291,7 +296,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
 
         for target in row[target_index].split('@#'):# 0: title, 1: url 2: ingredient, 3: directions
             target = f' {target} '
-            regex_For_Qty = f'(([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])|({"|".join(qty)  if len(qty) >0 else "@#$" }))+'#수량
+            regex_For_Qty = f'(([\d]+[\s]?([,|/|.][\d])*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])|({"|".join(qty)  if len(qty) >0 else "@#$" }))+'#수량
             # regex_For_Unit = f'(큰술|작은술{"|"+"|".join(unit)})'#단위
             regex_For_Unit = f'({"|".join(unit) if len(unit) >0 else "@#$" })'#단위
             regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
@@ -359,7 +364,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
         # if int(recipe_id) == 3451:
         #     print()
         units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
-        regex_For_Qty = f'([\d]+[\s]?[,|/|.]*[\d]*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
+        regex_For_Qty = f'([\d]+[\s]?([,|/|.][\d])*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
         regex_For_Unit =  f'({"|".join(sorted(set(units_for_tagging[:,1]), key=lambda unit: len(unit),reverse=True))})'#단위
         regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
         for found in re.finditer(regex, target.strip()):
@@ -376,7 +381,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                         relation_info.append(
                             f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {units_for_tagging[units_for_tagging[:,1]==matched__][:,0][0]});##{matched__}, {found_.group(0)}")
 
-
+        ingr_for_tagging = words_for_tagging[words_for_tagging[:,2]=="ingr"]
         target = target.replace(']','').replace('[','').replace("'",'').strip()
         regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
         text = re.sub(f"([ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]{'|['+']|['.join(regtmp)+']'})+",' ',target)
@@ -546,7 +551,7 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-# data = sql.data_to_tag(100000)
+# data = sql.data_to_tag(160000)
 data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
