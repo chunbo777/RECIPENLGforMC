@@ -1,15 +1,15 @@
 # "main" module, e.g. import app.main
 
-from fastapi import FastAPI
+from fastapi import FastAPI, File, UploadFile
 from core.config import settings
 from html.html import getHTML
 from js.js import getScript
 from generation.run_generation import main
+from generation.get_entities import detect_text_uri
 from fastapi.responses import HTMLResponse
 import json
 import re
 app = FastAPI()
-
 @app.get("/")
 async def root():
 
@@ -21,14 +21,40 @@ async def root():
 
 
 @app.get("/ingredients/{ingredients}")
-async def read_item(ingredients):
+async def get_recipe(ingredients):
 
     # recipe = str(ingredients)
     recipe = main(ingredients)
     return json.dumps(recipe)
 
+@app.get("/get_ingredients/{uri}")
+async def get_ingredients(uri):
+    # recipe = str(ingredients)
+    # recipe = main(ingredients)
+    # result = detect_text_uri(uri)
+    return uri
 
-    
+
+from typing import List
+
+@app.post("/files/")
+async def create_files(files: List[bytes] = File(...)):
+    return {"file_sizes": [len(file) for file in files]}
+
+
+import os
+@app.post("/uploadfiles/")
+async def create_upload_files(files: List[UploadFile] = File(...)):
+    result = []
+    for uploadFile in files:
+        # with open(f'{os.path.dirname(__file__)}/generation/resources/{uploadFile.filename}.png', 'wb') as f:
+        #     f.write(uploadFile.file.read())
+        entities = detect_text_uri(uploadFile.file)
+        result.append(entities)
+    # return {"filenames": [file.filename for file in files]}
+    return {"entities": result}
+
+
 import uvicorn
 
 if __name__ == "__main__":
