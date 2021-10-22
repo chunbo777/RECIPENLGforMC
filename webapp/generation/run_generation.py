@@ -113,8 +113,8 @@ def main(ingredients=None):
 
     args = AttrDict()
     args.update({
-        # 'model_type':'gpt2', 'model_name_or_path':'mbien/recipenlg'
-        'model_type':'kogpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model'
+        'model_type':'gpt2', 'model_name_or_path':'mbien/recipenlg'
+        # 'model_type':'kogpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model'
         , 'prompt':'', 'length':2048, 'temperature':1.0, 'top_k':0, 'top_p':0.9, 'no_cuda':'','seed' : 42 
     })
 
