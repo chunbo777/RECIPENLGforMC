@@ -301,8 +301,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             regex_For_Unit = f'({"|".join(unit) if len(unit) >0 else "@#$" })'#단위
             regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
             repl_info= {'loc':[], 'repl':[]}
-            # if row[-1] == 13:#자몽<2:QTY>개 설탕<400:QTY>g 
-            #     print()
+
             for found in re.finditer(regex, target):
                 if found is None or found.group().strip()=='':
                     continue
@@ -328,6 +327,8 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             # regex_For_Ingr = f'((\w*|ㄱ-힣*)*({"|".join(ingr)})(\w*|ㄱ-힣*)*)'
             regex_For_Ingr = f'({"|".join(ingr) if len(ingr) > 1 or (len(ingr)==1 and ingr[0].strip() !="") else "@#$"})+'
             repl_info= {'loc':[], 'repl':[]}
+            if row[-1] == 958:#자몽<2:QTY>개 설탕<400:QTY>g 
+                print()
             for found in re.finditer(regex_For_Ingr, modified_target):
                 if found is None or found.group().strip()=='':
                     continue
@@ -347,7 +348,7 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             if tagged_target == '':
                 continue
             else:# tagging이 된 data에서 추가로 tagging 할 여지가 있는지 확인
-                regex_val.append([re.sub('[<][^<]+[:](INGR|UNIT|QTY)+[>]','',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
+                regex_val.append([re.sub('[<][^<]+[:](INGR|UNIT|QTY)+[>]','@#',tagged_target), regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 # regex_val.append([target, regex_For_Ingr, row[1], row[-1],'INGR'])# 정규식 검정용
                 tagged_data.append([row[-1],target,tagged_target.replace('@#','')])
     m = Mecab()
@@ -357,36 +358,28 @@ def tag_data(data, words_for_tagging = None, target_index=2):
     ingr_to_add_on_set = [ ]
     relation_info = [ ]
     for target,regex__, url, recipe_id, cate in tqdm(np.array(regex_val)):
-        if cate =='QtyAndUnit' :# test
-            # print(target, cate)
-            # print(regex__)
-            continue
-        # if int(recipe_id) == 3451:
-        #     print()
-        units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
-        regex_For_Qty = f'([\d]+[\s]?([,|/|.][\d])*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
-        regex_For_Unit =  f'({"|".join(sorted(set(units_for_tagging[:,1]), key=lambda unit: len(unit),reverse=True))})'#단위
-        regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
-        for found in re.finditer(regex, target.strip()):
-            if found is None or found.group().strip()=='':
-                continue
-            else:
-                matched = found.group().strip()
-            for k, regex_ in {'UNIT':regex_For_Unit}.items():
-                matched_ = re.search(regex_, matched)
-                if matched_ is not None and matched_.group().strip() !='':
-                    matched__ = matched_.group().strip()
-                    if matched__ !='':
-                        found_ = re.search(f'(\S)*.?{matched__}.?(\S)*', matched)
-                        relation_info.append(
-                            f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {units_for_tagging[units_for_tagging[:,1]==matched__][:,0][0]});##{matched__}, {found_.group(0)}")
+        
+        # unit에서 새롭게 tagging 할 영역 탐색
+        # units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
+        # regex_For_Qty = f'([\d]+[\s]?([,|/|.][\d])*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
+        # regex_For_Unit =  f'({"|".join(sorted(set(units_for_tagging[:,1]), key=lambda unit: len(unit),reverse=True))})'#단위
+        # regex = f'{regex_For_Qty}[\s]*{regex_For_Unit}[\s]?'
+        # for found in re.finditer(regex, target.strip()):
+        #     if found is None or found.group().strip()=='':
+        #         continue
+        #     else:
+        #         matched = found.group().strip()
+        #     for k, regex_ in {'UNIT':regex_For_Unit}.items():
+        #         matched_ = re.search(regex_, matched)
+        #         if matched_ is not None and matched_.group().strip() !='':
+        #             matched__ = matched_.group().strip()
+        #             if matched__ !='':
+        #                 found_ = re.search(f'(\S)*.?{matched__}.?(\S)*', matched)
+        #                 relation_info.append(
+        #                     f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {units_for_tagging[units_for_tagging[:,1]==matched__][:,0][0]});##{matched__}, {found_.group(0)}")
 
+        # 식재료 부분에서 tagging 할 부분 탐색
         target = target.replace(']','').replace('[','').replace("'",'').strip()
-        # regtmp = [')','(','<','>','〉','♩','+',':','·',',','!','~','?','♬','#','-','♥','♡','★','☆','♪','/','&',',','*','ﾉ','ω','\.','\^']
-        # text = re.sub(f"([ㄱ-힣]*[것]|[ㄱ-힣]*[법]|[ㄱ-힣]*[의]|[\s]|[\d]{'|['+']|['.join(regtmp)+']'})+",' ',target).strip()
-        # text = ' '.join([i[0] for i in m.pos(text.strip()) if i[-1][0] not in ['J','V','E']])
-        isAlreadyInSet = False
-        # 임시주석처리
         for info_for_tagging in sorted(words_for_tagging[words_for_tagging[:,2]=="ingr"], key=lambda x: len(x[1]), reverse=True):
             if info_for_tagging[1] in target.strip():
             # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] not in ['ingr']:
@@ -394,33 +387,10 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                 found = re.search(f'(\S)*.?{info_for_tagging[1]}.?(\S)*', target)
                 relation_info.append(
                     f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{info_for_tagging[1]}, {found.group(0)}")
-                target = re.sub(f'(\S)*.?{info_for_tagging[1]}.?(\S)*','',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
+                # target = re.sub(f'(\S).?{info_for_tagging[1]}.?(\S)*','',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
+                target = re.sub(f'{info_for_tagging[1]}','@#',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
                 if re.search(f'[ㄱ-힣]+', target) is None: break
-                # isAlreadyInSet = True
-                # break
-        # 새로운 ingr 추가
-        # for temp in text.split():
-        #     if temp not in ['',]:
-        #         entity_candidate = ' '.join([i[0] for i in m.pos(temp.strip()) if i[-1] in ['NNG','NNP','NNB','NNBC','NR','NP']])
-        #         if entity_candidate in ['']:
-        #             continue
-        #         if not isAlreadyInSet:
-        #             for k in ['이연복', '백종원', '백선생','정창욱','최현석', '오세득','박은희', '셰프', '요즘'
-        #                     ,'중국집', '노오븐', '양하순', '어린이', '사르르', '워터드립', '전문점', '굿', '오늘', '또띠아로'
-        #                     , '내맘대로', '야간매점', '밥통', 'feel通', '또띠아로', '내맘대로', '삼시세끼', '마리텔', '올리브쇼'
-        #                     , '한잔', '감칠맛', '굴향이', '정준하', '홈베이킹', '감기', '나들이가요', '호텔식', '황금레시피', '가정식요리'
-        #                     , '한끼식사', '생일', '컵케이크', '전부치는것', '생생정보', '요리', '느낄수'
-        #                     , '나무','레시피','트리','영양','하트','주말','OK','그후','기타','깜짝물','끝난','끝부분','노릇노릇'
-        #                     ,'주세요','후','모두','한번','가로세로','고깃결','고루','그걸','다룰','다음','대략','대충','두세번'
-        #                     , '분할','살짝', '건강']:# 20211012
-        #                 if k in entity_candidate:
-        #                     isAlreadyInSet = True
-        #                     break
-        #         if not isAlreadyInSet:# 기존에 포함되지 않았던것
-        #             found = re.search(f'(\S)*.?{entity_candidate}.?(\S)*', target)
-        #             if found is not None:
-        #                 ingr_to_add_on_set.append(
-        #                     f"INSERT INTO words_for_tagging (word, pos, cate) values ('{entity_candidate.strip()}','custom','ingr');##{found.group()}")
+
     def custom_sort(x):
         temp = re.search('\(\S+,\s?\S+;',x).group(0).split(',')
         return temp[-1]+temp[0]
@@ -439,7 +409,11 @@ def tag_data(data, words_for_tagging = None, target_index=2):
         temp = pd.DataFrame([i.split('##') for i in relation_info]).groupby(by=[0]).apply(lambda x: ','.join(x[1]))
         df = pd.DataFrame({'sql':temp.index, 'ref':temp.values}).sort_values(by=['sql'], axis =0, key=lambda col: col.apply(lambda x: custom_sort(x)))
         df.to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_rel_to_add_{len(relation_info)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='#' )
-   
+
+        # 일치하지 않는 식재료 값
+        tempdf = pd.DataFrame(set([re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).strip() for i in relation_info if re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).split(',')[0].strip() != re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).split(',')[-1].strip()])).sort_values(by=[0], axis =0)
+        tempdf.to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_custom_ingr_to_add_{len(tempdf)}.csv',mode='w', encoding='utf8'), header=False, index=False)
+
     save_key = 'title' if target_index ==0 else 'ingredient' if target_index ==2 else 'directions'
     filename = f'{datetime.today().strftime("%y%m%d%H")}_tagged_{save_key}.csv'
     pd.DataFrame(np.asarray(tagged_data)[:,[0,-1]]).to_csv(open(f'{path}{filename}', mode='w', encoding='utf8'), header=False, index=False)
@@ -553,7 +527,7 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
-data = sql.data_to_tag(128)
+data = sql.data_to_tag()
 # data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
@@ -584,7 +558,6 @@ def func(param):# A,B,C >> A,B,C,AB,AC,BC,ABC
 #             an_array = np.append(an_array, totaldata[idx], 0)
 #         else:
 #             an_array = totaldata[idx]
-    
 #     print(an_array.shape if isinstance(an_array,np.ndarray) else indexes)
 #     if isinstance(an_array,np.ndarray):
 #         types = '_'.join(['title' if i ==0 else 'ingredient' if i ==2 else 'directions' for i in indexes])
