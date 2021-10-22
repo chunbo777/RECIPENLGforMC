@@ -101,66 +101,64 @@ def read_data(file_path: str, tokenizer: PreTrainedTokenizer = None):
     return data_list, label_list, strip_char
 
 
-def output_data(data, character_pred, tokenizer: PreTrainedTokenizer = None):
-    if tokenizer:
-        _, strip_char = return_tokenizer_type_and_strip_char(tokenizer)
+# def output_data(data, character_pred, tokenizer: PreTrainedTokenizer = None):
+#     if tokenizer:
+#         _, strip_char = return_tokenizer_type_and_strip_char(tokenizer)
 
-    label_list = [
-        "B-PS",
-        "I-PS",
-        "B-LC",
-        "I-LC",
-        "B-OG",
-        "I-OG",
-        "B-DT",
-        "I-DT",
-        "B-TI",
-        "I-TI",
-        "B-QT",
-        "I-QT",
-        "O",
-    ]
+#     label_list = [
+#         "B-PS",
+#         "I-PS",
+#         "B-LC",
+#         "I-LC",
+#         "B-OG",
+#         "I-OG",
+#         "B-DT",
+#         "I-DT",
+#         "B-TI",
+#         "I-TI",
+#         "B-QT",
+#         "I-QT",
+#         "O",
+#     ]
 
-    if tokenizer:
-        # sentence: "안녕 하세요.."
-        # original_clean_labels: [안, 녕, 하, 세, 요, ., .]
-        # sent_words: [안녕, 하세요..]
-        sent_words = data["text_a"].split(" ")
-        char_labels = []
-        bio_labels = []
-        char_idx = 0
-        for word in sent_words:
-            # 안녕, 하세요
-            correct_syllable_num = len(word)
-            tokenized_word = tokenizer.tokenize(word)
-                # case1: 음절 tokenizer --> [안, ##녕]
-                # case2: wp tokenizer --> [안녕]
-                # case3: 음절, wp tokenizer에서 unk --> [unk]
-                # unk규칙 --> 어절이 통채로 unk로 변환, 단, 기호는 분리
-            contain_unk = True if tokenizer.unk_token in tokenized_word else False
-            for i, token in enumerate(tokenized_word):
-                token = token.replace(strip_char, "")
-                if not token:
-                    continue
-                char_labels.append(character_pred[char_idx])
-                bio_labels.append((token, label_list[character_pred[char_idx]]))
-    #             modi_labels.append(original_clean_labels[char_idx])
-                if not contain_unk:
-                    char_idx += len(token)
-            if contain_unk:
-                char_idx += correct_syllable_num
-    else:
-        char_labels = []
-        bio_labels = []
-        strip_char = None
-    return bio_labels, char_labels
+#     if tokenizer:
+ 
+#         sent_words = data["text_a"].split(" ")
+#         char_labels = []
+#         bio_labels = []
+#         char_idx = 0
+#         for word in sent_words:
+#             # 안녕, 하세요
+#             correct_syllable_num = len(word)
+#             tokenized_word = tokenizer.tokenize(word)
+#                 # case1: 음절 tokenizer --> [안, ##녕]
+#                 # case2: wp tokenizer --> [안녕]
+#                 # case3: 음절, wp tokenizer에서 unk --> [unk]
+#                 # unk규칙 --> 어절이 통채로 unk로 변환, 단, 기호는 분리
+#             contain_unk = True if tokenizer.unk_token in tokenized_word else False
+#             for i, token in enumerate(tokenized_word):
+#                 token = token.replace(strip_char, "")
+#                 if not token:
+#                     continue
+#                 char_labels.append(character_pred[char_idx])
+#                 bio_labels.append((token, label_list[character_pred[char_idx]]))
+#     #             modi_labels.append(original_clean_labels[char_idx])
+#                 if not contain_unk:
+#                     char_idx += len(token)
+#             if contain_unk:
+#                 char_idx += correct_syllable_num
+#     else:
+#         char_labels = []
+#         bio_labels = []
+#         strip_char = None
+#     return bio_labels, char_labels
 
-    # text_a = sentence  # original sentence
-    # instance = {
-    #     "text_a": text_a,
-    #     "label": modi_labels,
-    #     "original_clean_labels": original_clean_labels,
-    # }
-    # data_list.append(instance)
+#     # text_a = sentence  # original sentence
+#     # instance = {
+#     #     "text_a": text_a,
+#     #     "label": modi_labels,
+#     #     "original_clean_labels": original_clean_labels,
+#     # }
+#     # data_list.append(instance)
 
-    # return data_list, label_list, strip_char
+#     # return data_list, label_list, strip_char

@@ -164,11 +164,9 @@ class OutputConvertor(object):
         tokenizer1 = AutoTokenizer.from_pretrained(args.model_dir)
         for data, pred in zip(data_list, preds):
             character_preds, targets = self.convert_into_character_pred(data, pred)
-            # list_of_character_preds.append(character_preds)
             list_of_character_preds.append(character_preds)
             targets_all.append(targets)
-            # bio_labels, char_labels=  output_data(data, character_preds, tokenizer1)
-            # pairs.append(bio_labels)
+           
         return list_of_character_preds, targets_all
 
 
@@ -241,6 +239,7 @@ def inference(args):
         writer = csv.writer(f)
         # writer.writerows(list_of_character_preds)
         writer.writerows(targets_all)
+
     f.close()
 
 
