@@ -25,11 +25,23 @@ whenSpanClicked = (root, text)=>{
     save_btn.type = 'button'
 
     save_btn.onclick =(e)=>{
-        span = document.createElement('span')
-        e.target.parentElement.parentElement.appendChild(span)
-        span.innerHTML = $(e.target.parentElement).find('input')[0].value
-        span.className = 'badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
-        e.target.parentElement.remove()
+        const xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+            jsonData = JSON.parse(this.responseText)
+            span = document.createElement('span')
+            e.target.parentElement.parentElement.appendChild(span)
+            span.innerHTML = jsonData[0]
+            span.title = jsonData
+            span.setAttribute('data','bs-toggle="tooltip"') 
+
+            // span.className = 'badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+            span.className = 'badge '+bgclasses[jsonData[jsonData.length-1] == undefined? 0 : jsonData[jsonData.length-1]]
+            e.target.parentElement.remove()
+        }
+        xhttp.open("GET", location.href + "get_tag/"+$(e.target.parentElement).find('input')[0].value);
+        xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        xhttp.send();
+
     }
 
     del_btn = document.createElement('button')
@@ -40,13 +52,61 @@ whenSpanClicked = (root, text)=>{
     }
     del_btn.className = 'btn btn-danger'
     del_btn.type = 'button'
-
 }
 
 $(()=>{
+    $(document).on('change',(e)=>{
+        if(e.target.tagName == 'INPUT' & e.target.type == 'file'){
+            if(e.target.files.length>0){
+                document.getElementById('img').src = URL.createObjectURL(e.target.files[0])
+            }
+        }
+    })
+    $(document).on('submit',(e)=>{
+        e.preventDefault()
+        if(e.target.elements[0].files.length==0){
+            alert('파일을 선택해주세요')
+            return
+        }
+
+        $(e.target.elements[1]).empty() 
+        span = document.createElement('span')
+        e.target.elements[1].appendChild(span)
+        span.className = 'spinner-border spinner-border-sm'
+        e.target.elements[1].innerHTML += 'Loading..'
+        e.target.elements[1].disabled = true
+
+        const xhttp = new XMLHttpRequest();
+        xhttp.onload = function() {
+            $(e.target.elements[1]).empty() 
+            e.target.elements[1].className = 'btn btn-success'
+            e.target.elements[1].innerHTML = '식재료 추출'
+            e.target.elements[1].disabled = false
+
+
+            jsonData = JSON.parse(this.responseText)
+            for (const key in jsonData) {
+                for(let n =0;n<jsonData[key].length;n++){
+                    data = jsonData[key][n]
+                    span = document.createElement('span')
+                    document.getElementById('params').appendChild(span)
+                    span.innerHTML = data[0]
+                    span.title = data
+                    span.setAttribute('data','bs-toggle="tooltip"') 
+                    // span.className = 'badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+                    span.className = 'badge '+bgclasses[data[data.length-1] == undefined? 0 : data[data.length-1]]
+                }
+            }
+            document.getElementById('getentities').style.display = 'none'
+            document.getElementById('params').parentElement.style.removeProperty('display')
+        }
+        xhttp.open("POST", location.href +"uploadfiles/");
+        xhttp.setRequestHeader("enctype", "multipart/form-data");
+        xhttp.send(new FormData(e.target));
+    })
 
     $(document.body).on("click", (e)=>{
-
+        
         console.log($(e))
         if(e.target.className.includes('badge') & e.target.tagName == 'SPAN'){
             inputs = $(e.target.parentElement).find('input')
@@ -84,14 +144,13 @@ $(()=>{
                 e.target.disabled = false
 
                 const jsonData = JSON.parse(JSON.parse(this.responseText))// parse
-
                 let root = document.getElementById("Recipe")
+
                 $(root).empty();
 
                 for (let k in jsonData){
                     let div = document.createElement('div')
                     root.appendChild(div)
-
                     let h3 = document.createElement('h3')
                     h3.innerHTML = k
                     div.appendChild(h3)
@@ -100,18 +159,15 @@ $(()=>{
                     if (Array.isArray(jsonData[k])){
                         let innerDiv = document.createElement('div')
                         contents.appendChild(innerDiv)
-
                         if (k=='INSTR'){
                             innerDiv.className = 'list-group'
                             for (let n =0 ; n<jsonData[k].length; n++){
                                 let a = document.createElement('a')
                                 innerDiv.appendChild(a)
                                 a.className = 'list-group-item list-group-item-action '+groupColors[Math.floor(groupColors.length*Math.random())]
-                                
                                 a.innerHTML = (n+1)+ ') '+jsonData[k][n]
                             }
-                        }else {
-                            
+                        }else {                            
                             for (let n =0 ; n<jsonData[k].length; n++){
                                 let span = document.createElement('span')
                                 innerDiv.appendChild(span)
@@ -131,16 +187,10 @@ $(()=>{
             }// xhttp.onload = function() {
             xhttp.open("GET", location.href + "ingredients/"+foods.join(', '));
             // xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
-
             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             xhttp.send();
-
-            
-
         }else if (e.target.id.includes('params') & e.target.tagName == 'DIV'){
-
             whenSpanClicked(e.target, null)
-
         }
     });
 })
