@@ -31,12 +31,19 @@ whenSpanClicked = (root, text)=>{
             span = document.createElement('span')
             e.target.parentElement.parentElement.appendChild(span)
             span.innerHTML = jsonData[0]
-            span.title = jsonData
-            span.setAttribute('data','bs-toggle="tooltip"') 
+            span.title = jsonData[jsonData.length-2]
+            span.setAttribute('data-bs-toggle','tooltip') 
 
             // span.className = 'badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
             span.className = 'badge '+bgclasses[jsonData[jsonData.length-1] == undefined? 0 : jsonData[jsonData.length-1]]
             e.target.parentElement.remove()
+
+            // Note: Tooltips must be initialized with JavaScript to work.
+            let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            let tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+              return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+
         }
         xhttp.open("GET", location.href + "get_tag/"+$(e.target.parentElement).find('input')[0].value);
         xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -91,12 +98,20 @@ $(()=>{
                     span = document.createElement('span')
                     document.getElementById('params').appendChild(span)
                     span.innerHTML = data[0]
-                    span.title = data
-                    span.setAttribute('data','bs-toggle="tooltip"') 
+                    span.title = data[data.length-2]
+                    // span.setAttribute('data','bs-toggle="tooltip"') 
+                    span.setAttribute('data-bs-toggle','tooltip')  
                     // span.className = 'badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
                     span.className = 'badge '+bgclasses[data[data.length-1] == undefined? 0 : data[data.length-1]]
                 }
             }
+            // Note: Tooltips must be initialized with JavaScript to work.
+            let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+            let tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+              return new bootstrap.Tooltip(tooltipTriggerEl)
+            })
+
+
             document.getElementById('getentities').style.display = 'none'
             document.getElementById('params').parentElement.style.removeProperty('display')
         }
