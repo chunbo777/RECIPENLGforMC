@@ -3,19 +3,17 @@ import csv
 import os
 import tarfile
 from typing import List
+from tokenizers import Tokenizer
 
 import torch
 
 from dataset import NerDataset
 from transformers import (AutoModelForTokenClassification, AutoTokenizer,
-                          PreTrainedTokenizer
-                          , AutoModelForMaskedLM
-                          , ElectraConfig, ElectraForTokenClassification, ElectraTokenizer
-                          )
-from utils import read_data
-
-# KLUE_NER_OUTPUT = "output.csv"  # the name of the output file should be output.csv
-KLUE_NER_OUTPUT = "output.tsv"  # the name of the output file should be output.csv
+                          PreTrainedTokenizer)
+from utils import read_data, output_data
+# import wandb
+# wandb.login()
+KLUE_NER_OUTPUT = "output.csv"  # the name of the output file should be output.csv
 
 
 def load_model(model_dir, model_tar_file):
@@ -23,7 +21,7 @@ def load_model(model_dir, model_tar_file):
     tar = tarfile.open(tarpath, "r:gz")
     tar.extractall(path=model_dir)
 
-    model = AutoModelForTokenClassification.from_pretrained(model_dir)
+    model = AutoModelForTokenClassification.from_pretrained('/home/tutor/seojiwon/klue-ner/model/transformers')
     return model
 
 
@@ -82,13 +80,14 @@ class OutputConvertor(object):
         text = data["text_a"]
 
         original_sentence = text  # 안녕 하세요 ^^
-        subword_preds = [int(x) for x in subword_preds]# len(subword_preds) == max_length#추론 값 index
-        character_preds = [subword_preds[0]]  # [CLS] # 여기서는 dataset에 cls를 붙이지 않지만 학습과정에서는 token목록 앞부분에 CLS 붙임(data_loader)
-        character_preds_idx = 1#?
-
+        subword_preds = [int(x) for x in subword_preds]
+        character_preds = [subword_preds[0]]  # [CLS]
+        character_preds_idx = 1
+        return_target =[]
         for word in original_sentence.split(" "):  # 안녕 하세요
-            if character_preds_idx >= self.max_length - 1:#?
+            if character_preds_idx >= self.max_length - 1:
                 break
+            targets = []
             subwords = self.tokenizer.tokenize(word)
             if self.tokenizer.unk_token in subwords:  # 뻥튀기가 필요한 case!
                 # case1: ..찝찝..찝찝해 --> [".", ".", "[UNK]", ".", ".", "[UNK]"]
@@ -99,7 +98,7 @@ class OutputConvertor(object):
                 # case1: [".", ".", "[UNK]", "[+UNK]", ".", ".", "[UNK]", "[+UNK]", "[+UNK]"]
                 # case2: ['미나', '[UNK]', '[UNK]', '美', '[UNK]', '27', '##가']
                 unk_flag = False
-                for subword in unk_aligned_subwords:
+                for j, subword in enumerate(unk_aligned_subwords):
                     if character_preds_idx >= self.max_length - 1:
                         break
                     subword_pred = subword_preds[character_preds_idx]
@@ -116,6 +115,7 @@ class OutputConvertor(object):
                             character_pred_label = "I-" + entity_category
                             character_pred = self.label_list.index(character_pred_label)
                             character_preds.append(character_pred)
+                            # targets.append((subwords[j], entity_category)) 해결해야
                         continue
                     else:
                         if unk_flag:
@@ -129,7 +129,7 @@ class OutputConvertor(object):
                                 1  # TODO +unk가 끝나는 시점에서도 += 1 을 해줘야 다음 label로 넘어감
                             )
             else:
-                for subword in subwords:  # 안녕 -> 안, ##녕하, ##세요
+                for j, subword in enumerate(subwords):  # 안녕 -> 안, ##녕하, ##세요
                     if character_preds_idx >= self.max_length - 1:
                         break
                     subword = subword.replace(
@@ -137,9 +137,10 @@ class OutputConvertor(object):
                     )  # xlm roberta: "▁" / others "##"
                     subword_pred = subword_preds[character_preds_idx]
                     subword_pred_label = self.label_list[subword_pred]
+                    
                     for i in range(0, len(subword)):  # 안, 녕
                         if i == 0:
-                            character_preds.append(subword_pred)# 첫 문자의 label = subword의 label과 동일
+                            character_preds.append(subword_pred)
                         else:
                             if subword_pred_label == "O":
                                 character_preds.append(subword_pred)
@@ -150,18 +151,23 @@ class OutputConvertor(object):
                                     character_pred_label
                                 )
                                 character_preds.append(character_pred)
-                    character_preds_idx += 1# subword 단위로 추론이 이루어졌을 것이라 가정
-
+                                targets.append((subwords[j], entity_category))
+                    character_preds_idx += 1
+            return_target.extend(targets)
         character_preds.append(subword_preds[-1])  # [SEP] label
-        return character_preds
-
+        return character_preds, return_target
+    
     def return_char_pred_output(self, data_list, preds):
         list_of_character_preds = []
+        pairs = []
+        targets_all=[]
+        tokenizer1 = AutoTokenizer.from_pretrained(args.model_dir)
         for data, pred in zip(data_list, preds):
-            character_preds = self.convert_into_character_pred(data, pred)
+            character_preds, targets = self.convert_into_character_pred(data, pred)
             list_of_character_preds.append(character_preds)
-
-        return list_of_character_preds# subword 단위 예측값을 predict단위 예측값으로 변환
+            targets_all.append(targets)
+           
+        return list_of_character_preds, targets_all
 
 
 @torch.no_grad()
@@ -172,8 +178,10 @@ def inference(args):
 
     # Load model
     model = load_model(args.model_dir, args.model_tar_file).to(device)
-    # model = AutoModelForMaskedLM.from_pretrained("klue/roberta-large")
-
+    # model = load_model(args.model_tar_file).to(device)
+    if num_gpus > 1:
+        model = torch.nn.DataParallel(model)
+    model.eval()
 
     # Load tokenzier
     kwargs = (
@@ -182,37 +190,21 @@ def inference(args):
         else {}
     )
     tokenizer = AutoTokenizer.from_pretrained(args.model_dir)
-    # tokenizer = AutoTokenizer.from_pretrained("klue/roberta-large")
-    # tokenizer = AutoTokenizer.from_pretrained("monologg/koelectra-base-v3-discriminator")
 
     # Build dataloader
     test_data, label_list, strip_char = read_data(
         os.path.join(args.data_dir, args.test_filename), tokenizer
     )
-
-
     dataset = NerDataset(
         tokenizer,
-        test_data,# text_a, label, 원시 label
-        label_list,# "B-PS", "I-PS", "B-LC"...
+        test_data,
+        label_list,
         args.max_length,
         args.batch_size,
         shuffle=False,
         **kwargs
     )
     dataloader = dataset.loader
-
-    # model_path = "monologg/koelectra-base-v3-discriminator"
-    # config = ElectraConfig.from_pretrained(model_path
-    #     , num_labels= len(label_list)
-    #     # , id2label={str(i): label for i, label in enumerate(label_list)}
-    #     , label2id=dataset.label2idx
-    # )
-    # model = ElectraForTokenClassification.from_pretrained(model_path, config=config)
-
-    if num_gpus >= 1:# 기존 >1 에서 수정
-        model = torch.nn.DataParallel(model)
-    model.eval()
 
     # Run Inference
     preds = []
@@ -226,9 +218,9 @@ def inference(args):
 
         output = model(
             input_ids,
+            token_type_ids=token_type_ids,
             attention_mask=attention_mask,
             labels=labels,
-            token_type_ids=token_type_ids,
         )[1]
 
         pred = output.argmax(dim=2)
@@ -241,62 +233,53 @@ def inference(args):
     output_convertor = OutputConvertor(
         tokenizer, label_list, strip_char, args.max_length
     )
-    list_of_character_preds = output_convertor.return_char_pred_output(test_data, preds)
-
-    # 20211001
-    for i, data in enumerate(test_data):
-        data['pred'] = [label_list[j] for j in list_of_character_preds[i]]
+    list_of_character_preds, targets_all = output_convertor.return_char_pred_output(test_data, preds)
 
     with open(os.path.join(args.output_dir, KLUE_NER_OUTPUT), "w", newline="") as f:
-        # writer = csv.writer(f)
+        writer = csv.writer(f)
         # writer.writerows(list_of_character_preds)
-        for i, data in enumerate(test_data):
-            f.write(f'\n\n')
-            for k, v in data.items():
-                if isinstance(v, list):
-                    v = '\t'.join([f'\t{i}' if i =='O' else i for i in v ])
-                f.write(f'{k} : {v}')
-                f.write(f'\n')
+        writer.writerows(targets_all)
+
     f.close()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    
+
     parser.add_argument(
         "--batch_size",
         type=int,
-        # default=16,
-        default=4,
+        default=16,
         metavar="N",
         help="input batch size for inference (default: 64)",
     )
     parser.add_argument(
-        # "--data_dir", type=str, default=os.environ.get("SM_CHANNEL_EVAL", "/data")
-        "--data_dir", type=str, default=f"{os.path.dirname(__file__)}/data/klue-ner-v1.1"
+        "--data_dir", type=str, default=os.environ.get("SM_CHANNEL_EVAL", "/home/tutor/seojiwon/klue-ner/data/")
     )
     parser.add_argument(
-        # "--model_dir", type=str, default='./model'
-        "--model_dir", type=str, default=f"{os.path.dirname(__file__)}/model"
+        "--model_dir", type=str, default='/home/tutor/seojiwon/klue-ner/model/transformers'
     )
     parser.add_argument(
         "--output_dir",
         type=str,
-        # default=os.environ.get("SM_OUTPUT_DATA_DIR", "/output"),
-        default=f"{os.path.dirname(__file__)}/output",
+        default=os.environ.get("SM_OUTPUT_DATA_DIR", "/home/tutor/seojiwon/klue-ner/output"),
     )
+
+    # /home/tutor/seojiwon/klue-ner/model/transformers/ouput.tar.gz
     parser.add_argument(
         "--model_tar_file",
         type=str,
-        default="klue_ner_model.tar.gz",
+        default="ouput.tar.gz",
         help="it needs to include all things for loading baseline model & tokenizer, \
              only supporting transformers.AutoModelForSequenceClassification as a model \
              transformers.XLMRobertaTokenizer or transformers.BertTokenizer as a tokenizer",
     )
+
+    # /home/tutor/seojiwon/klue-ner/data/klue-ner-v1.1/klue-ner-v1.1_dev.tsv
     parser.add_argument(
         "--test_filename",
         # default="klue-ner-v1.1_test.tsv",
-        default="klue-ner-v1.1_dev_sample_10.tsv",
+        default="klue-ner-v1.1/klue-ner-v1.1_dev.tsv",
         type=str,
         help="Name of the test file (default: klue-ner-v1.1_test.tsv)",
     )
@@ -308,5 +291,4 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    
     inference(args)
