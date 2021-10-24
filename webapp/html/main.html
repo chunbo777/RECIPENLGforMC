@@ -16,41 +16,37 @@
         }
 
     </style>
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Tangerine"> -->
+    <!-- <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Black+Han+Sans"> -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <!-- Latest compiled and minified CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Latest compiled JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.1/dist/js/bootstrap.bundle.min.js"></script>
 </head>
-<script></script>
+<script></script>   
 <body>
     <div class="container mt-3 border">
         <h1 class='m-5 p-5 bg-light text-dark rounded border'>셀럽시피&발명식!</h1>
         <div class="row m-5 p-5  bg-light text-dark rounded " >
             <div class="col-sm-4">
-                <img class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
+                <img id="img" class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
             </div>
             <div class="col-sm-8">
-                <div class="row">
-                    <div class="col-sm-8" id="params">
-                        <!-- <span class="badge bg-primary">banana</span>
-                        <span class="badge bg-secondary">milk</span>
-                        <span class="badge bg-success">apple</span> -->
-                        <span class="badge bg-primary">공심채</span>
-                        <span class="badge bg-secondary">간마늘</span>
-                        <span class="badge bg-success">페퍼톤치노</span>
-                        <span class="badge bg-danger">치킨스톡</span>
-                        <span class="badge bg-warning">피쉬소스</span>
-                        <span class="badge bg-info">굴소스</span>
-                        <span class="badge bg-dark">참기름</span>
-                    </div>
-                    <div class="col-sm-4"><button type="button" class="btn btn-primary" id="getRecipe">레시피 생성</button></div>
-
-                    <form action="/uploadfiles/" enctype="multipart/form-data" method="post">
-                        <input accept=".jpg" name="files" type="file" multiple, id="files">
-                        <input type="submit">
+                <div class="row"  style="display: none;">
+                    <div class="col-sm-12 mb-5 border border-5 rounded-3" id="detectedFromImg" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                </div>
+                <div class="row"  style="display: none;">
+                    <div class="col-sm-11 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="col-sm-1"><button type="button" class="btn btn-primary" id="getRecipe">레시피<br/>생성</button></div>
+                </div>
+                <div class="row" id="getentities">
+                    <form enctype="multipart/form-data" method="post">
+                        <div class="input-group mb-3">
+                            <input accept=".png, .jpg, .jpeg" name="files" type="file" multiple, id="files" class="form-control" >
+                            <button class="btn btn-success" type="submit">식재료 추출</button> 
+                          </div>
                     </form>
-
                 </div>
                 <div class="row">
                     <div class="row" id='Recipe'></div>

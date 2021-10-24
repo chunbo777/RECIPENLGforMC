@@ -23,12 +23,42 @@ class EntitiesWithMySqlPipeline:
         where in_use =1 and cate ='ingr' 
         and word in ("{'","'.join([input for input in inputs if input.strip()!=''])}"); 
         '''
+        sql = f'''
+        with 
+        temp as (
+        select pos, count(*) cnt from words_for_tagging where in_use =1 and cate = 'ingr' and char_length(word) <5 group by pos order by cnt desc limit 6)
+        , temp1 as (select *, @rownum := @rownum + 1 AS _rank from temp, (SELECT @rownum := 0) r)
+        select A.word, B.cnt _code, A.pos, B._rank
+        from words_for_tagging A
+        left join temp1 B on A.pos = B.pos
+        where A.in_use =1 and A.cate = 'ingr' 
+        and A.word in ("{'","'.join([input for input in inputs if input.strip()!=''])}"); 
+        '''
         self.curr.execute(sql)# query 수행
         result = self.curr.fetchall()# query 결과 추출
         return result
     
 
+    def get_tag_from_db(self, word):
+            sql = f'''
+            with 
+            temp as (
+            select pos, count(*) cnt from words_for_tagging where in_use =1 and cate = 'ingr' and char_length(word) <5 group by pos order by cnt desc limit 6)
+            , temp1 as (select *, @rownum := @rownum + 1 AS _rank from temp, (SELECT @rownum := 0) r)
+            select A.word, B.cnt _code, A.pos, B._rank
+            from words_for_tagging A
+            left join temp1 B on A.pos = B.pos
+            where A.in_use =1 and A.cate = 'ingr' 
+            and A.word in ("{word}"); 
+            '''
+            self.curr.execute(sql)# query 수행
+            result = self.curr.fetchone()# query 결과 추출
+            return result
+
 sql = EntitiesWithMySqlPipeline()
+def get_tag_from_db(word):
+    return sql.get_tag_from_db(word)
+
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="/home/lab17/RECIPENLGforMC/webapp/generation/exemplary-oath-326109-4b2e00f97193.json"
 # Imports the Google Cloud client library
 from google.cloud import vision

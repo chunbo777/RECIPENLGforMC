@@ -5,7 +5,7 @@ from core.config import settings
 from html.html import getHTML
 from js.js import getScript
 from generation.run_generation import main
-from generation.get_entities import detect_text_uri
+from generation.get_entities import detect_text_uri, get_tag_from_db
 from fastapi.responses import HTMLResponse
 import json
 import re
@@ -27,32 +27,35 @@ async def get_recipe(ingredients):
     recipe = main(ingredients)
     return json.dumps(recipe)
 
-@app.get("/get_ingredients/{uri}")
-async def get_ingredients(uri):
+@app.get("/get_tag/{word}")
+async def get_tag(word):
     # recipe = str(ingredients)
     # recipe = main(ingredients)
-    # result = detect_text_uri(uri)
-    return uri
+    
+    tag = get_tag_from_db(word)
+    print(word)
+    print(tag)
+    return tag
 
 
 from typing import List
 
-@app.post("/files/")
-async def create_files(files: List[bytes] = File(...)):
-    return {"file_sizes": [len(file) for file in files]}
+# @app.post("/files/")
+# async def create_files(files: List[bytes] = File(...)):
+#     return {"file_sizes": [len(file) for file in files]}
 
 
 import os
 @app.post("/uploadfiles/")
 async def create_upload_files(files: List[UploadFile] = File(...)):
-    result = []
+    result = {}
     for uploadFile in files:
         # with open(f'{os.path.dirname(__file__)}/generation/resources/{uploadFile.filename}.png', 'wb') as f:
         #     f.write(uploadFile.file.read())
         entities = detect_text_uri(uploadFile.file)
-        result.append(entities)
+        result.update({uploadFile.filename :entities})
     # return {"filenames": [file.filename for file in files]}
-    return {"entities": result}
+    return result
 
 
 import uvicorn
