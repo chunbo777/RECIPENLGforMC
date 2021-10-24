@@ -164,8 +164,8 @@ class RecipeWithMySqlPipeline:
         with 
         A as (
             select max(Recipeid) Recipeid, title, link from recipe 
-            where created_at < 20211006 and in_use =1
-            group by title, link {lim}
+            where created_at < 20211006 and in_use =1 
+            group by title, link  order by Recipeid desc {lim}
             )
         , B as ( select group_concat(B.ingredient  SEPARATOR ' ') ingr, A.Recipeid from A left join ingredients B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
         , C as ( select group_concat(B.direction  SEPARATOR '@#') dir, A.Recipeid from A left join directions B on A.Recipeid = B.Recipeid where B.in_use =1 group by A.Recipeid)
@@ -325,10 +325,11 @@ def tag_data(data, words_for_tagging = None, target_index=2):
                 modified_target = ' '+process_text(repl_info, target)
             ingr = row[-2].split('@#') if isinstance(row[-2], str) else []# 식재료
             # regex_For_Ingr = f'((\w*|ㄱ-힣*)*({"|".join(ingr)})(\w*|ㄱ-힣*)*)'
-            regex_For_Ingr = f'({"|".join(ingr) if len(ingr) > 1 or (len(ingr)==1 and ingr[0].strip() !="") else "@#$"})+'
+            regex_For_Ingr = f'({"|".join(ingr) if len(ingr) > 1 or (len(ingr)==1 and ingr[0].strip() !="") else "@#"})+'
             repl_info= {'loc':[], 'repl':[]}
-            if row[-1] == 958:#자몽<2:QTY>개 설탕<400:QTY>g 
+            if row[-1] == 6853:
                 print()
+
             for found in re.finditer(regex_For_Ingr, modified_target):
                 if found is None or found.group().strip()=='':
                     continue
@@ -357,8 +358,13 @@ def tag_data(data, words_for_tagging = None, target_index=2):
 
     ingr_to_add_on_set = [ ]
     relation_info = [ ]
+    relations = []
     for target,regex__, url, recipe_id, cate in tqdm(np.array(regex_val)):
-        
+        # continue
+        # if int(recipe_id) == 6853:
+        #     print()
+        # else :
+        #     continue
         # unit에서 새롭게 tagging 할 영역 탐색
         # units_for_tagging = words_for_tagging[words_for_tagging[:,2]=="unit"]
         # regex_For_Qty = f'([\d]+[\s]?([,|/|.][\d])*|[\d]*[\s]?[\u2150-\u215E\u00BC-\u00BE])+'#수량
@@ -385,8 +391,10 @@ def tag_data(data, words_for_tagging = None, target_index=2):
             # if info_for_tagging[1]==entity_candidate and info_for_tagging[2] not in ['ingr']:
                 if re.search(f'(\s{info_for_tagging[1]}|{info_for_tagging[1]}\s)', target) is None: continue
                 found = re.search(f'(\S)*.?{info_for_tagging[1]}.?(\S)*', target)
+
                 relation_info.append(
                     f"INSERT INTO rel_btw_recipe_and_ner (Recipeid, NER_id) values ({recipe_id}, {info_for_tagging[0]});##{info_for_tagging[1]}, {found.group(0)}")
+                relations.append([int(recipe_id),info_for_tagging[0]])# mysql load file 함수를 사용해보기 위해 따로 저장
                 # target = re.sub(f'(\S).?{info_for_tagging[1]}.?(\S)*','',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
                 target = re.sub(f'{info_for_tagging[1]}','@#',target)# regex 고구마 > target 고구마, 감자, 고구마 >> , 감자,
                 if re.search(f'[ㄱ-힣]+', target) is None: break
@@ -409,10 +417,26 @@ def tag_data(data, words_for_tagging = None, target_index=2):
         temp = pd.DataFrame([i.split('##') for i in relation_info]).groupby(by=[0]).apply(lambda x: ','.join(x[1]))
         df = pd.DataFrame({'sql':temp.index, 'ref':temp.values}).sort_values(by=['sql'], axis =0, key=lambda col: col.apply(lambda x: custom_sort(x)))
         df.to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_rel_to_add_{len(relation_info)}.csv',mode='w', encoding='utf8'), header=False, index=False, sep='#' )
-
+        # mysql load file 함수에 사용할 파일
+        pd.DataFrame(relations).to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_relations_{len(relations)}.csv',mode='w', encoding='utf8'), header=False, index=False)
         # 일치하지 않는 식재료 값
-        tempdf = pd.DataFrame(set([re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).strip() for i in relation_info if re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).split(',')[0].strip() != re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1]).split(',')[-1].strip()])).sort_values(by=[0], axis =0)
+
+        ingr_to_add = []
+        ingr_to_add_simple = []
+        for i in relation_info:
+            first = re.sub('([\(|\)]|\s)+',' ',i.split('##')[-1])
+            second = first.split(',')[0].strip()
+            third = first.split(',')[-1].strip()
+            forth = re.sub('(\s*@#.*)','',third).split(',')[-1]
+            if second != third:
+                ingr_to_add.append(first)
+            if second in forth:
+                ingr_to_add_simple.append(f'{second}, {forth}')
+
+        tempdf = pd.DataFrame(set(ingr_to_add)).sort_values(by=[0], axis =0)
         tempdf.to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_custom_ingr_to_add_{len(tempdf)}.csv',mode='w', encoding='utf8'), header=False, index=False)
+        tempdf1 = pd.DataFrame(set(ingr_to_add_simple)).sort_values(by=[0], axis =0)
+        tempdf1.to_csv(open(f'{path}{datetime.today().strftime("%y%m%d%H")}_custom_ingr_to_add_simple_{len(tempdf1)}.csv',mode='w', encoding='utf8'), header=False, index=False)
 
     save_key = 'title' if target_index ==0 else 'ingredient' if target_index ==2 else 'directions'
     filename = f'{datetime.today().strftime("%y%m%d%H")}_tagged_{save_key}.csv'
@@ -527,8 +551,8 @@ def get_BIO_data(path, data, col_type):
 # path = f'{os.path.dirname(__file__)}/data/'
 # get_tagged_data(path, 'beforeTagged_2110041641_1000.csv')
 sql = RecipeWithMySqlPipeline()
+# data = sql.data_to_tag(5)
 data = sql.data_to_tag()
-# data = sql.data_to_tag()
 wordSet = sql.words_for_tagging()
 path = f'{os.path.dirname(__file__)}/data/'
 totaldata = {}

@@ -31,7 +31,10 @@ async def get_recipe(ingredients):
 async def get_tag(word):
     # recipe = str(ingredients)
     # recipe = main(ingredients)
+    
     tag = get_tag_from_db(word)
+    print(word)
+    print(tag)
     return tag
 
 
