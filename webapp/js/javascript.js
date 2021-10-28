@@ -107,7 +107,10 @@ $(()=>{
     $(document).on('change',(e)=>{
         if(e.target.tagName == 'INPUT' & e.target.type == 'file'){
             if(e.target.files.length>0){
-                document.getElementById('img').src = URL.createObjectURL(e.target.files[0])
+                let img = document.createElement('img')
+                document.getElementById('preview').appendChild(img)
+                img.src = URL.createObjectURL(e.target.files[0])
+                img.className = 'img-fluid'
             }
         }
     })
@@ -232,9 +235,12 @@ $(()=>{
                     let div = document.createElement('div')
                     root.appendChild(div)
                     div.className = 'mt-5 border border-5 rounded-3'
+                    
                     let h3 = document.createElement('h3')
                     h3.innerHTML = jsMap.get(k)
+                    h3.className = 'm-5'
                     div.appendChild(h3)
+
                     let contents = document.createElement('div')
                     div.appendChild(contents)
                     // contents.className = 'm-3 border border-5 rounded-3 '+borderColors[Math.floor(borderColors.length*Math.random())]
@@ -242,23 +248,27 @@ $(()=>{
                     if (Array.isArray(jsonData[k])){
                         let innerDiv = document.createElement('div')
                         contents.appendChild(innerDiv)
+                        // innerDiv.className = 'row'
                         if (k=='INSTR'){
                             // innerDiv.className = 'list-group'
                             for (let n =0 ; n<jsonData[k].length; n++){
                                 // let a = document.createElement('a')
+                                let wrapperDiv = document.createElement('div')
+                                innerDiv.appendChild(wrapperDiv)
+                                wrapperDiv.className = 'row'
                                 let span = document.createElement('span')
+                                wrapperDiv.appendChild(span)
                                 // innerDiv.appendChild(a)
-                                innerDiv.appendChild(span)
                                 innerDiv.appendChild(document.createElement('br'))
 
                                 // a.className = 'list-group-item list-group-item-action '+groupColors[Math.floor(groupColors.length*Math.random())]
-                                span.className = 'm-3 badge bg-light text-body'
+                                // span.className = 'm-3 badge bg-light text-body'
 
-                                let h4 = document.createElement('h4')
-                                // a.appendChild(h4)
-                                span.appendChild(h4)
-                                // h5.className = 'text-dark'
-                                h4.innerHTML = (n+1)+ ') '+jsonData[k][n]
+                                // let h4 = document.createElement('h4')
+                                // span.appendChild(h4)
+                                // h4.innerHTML = (n+1)+ ') '+jsonData[k][n]
+                                span.innerHTML = (n+1)+ ') '+jsonData[k][n]
+                                span.style.fontSize = 'x-large'
                             }
                         }else {                            
                             for (let n =0 ; n<jsonData[k].length; n++){
