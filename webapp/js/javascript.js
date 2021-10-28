@@ -159,10 +159,7 @@ $(()=>{
               return new bootstrap.Tooltip(tooltipTriggerEl)
             })
 
-
-            document.getElementById('getentities').style.display = 'none'
-            document.getElementById('detectedFromImg').parentElement.style.removeProperty('display')
-            document.getElementById('params').parentElement.style.removeProperty('display')
+            document.getElementsByClassName('nav-link')[1].click()
         }
         xhttp.open("POST", location.href +"uploadfiles/");
         xhttp.setRequestHeader("enctype", "multipart/form-data");
@@ -218,31 +215,48 @@ $(()=>{
 
                 const jsonData = JSON.parse(JSON.parse(this.responseText))// parse
                 let root = document.getElementById("Recipe")
-
+                // root.parentElement.style.removeProperty('display')
                 $(root).empty();
 
+                let jsMap = new Map()
+                jsMap.set('TITLE', '요리');
+                jsMap.set('INGR', '재료');
+                jsMap.set('INSTR', '조리순서');
+
+
                 for (let k in jsonData){
+                    if(k=='INPUT'){
+                        continue
+                    }
+
                     let div = document.createElement('div')
                     root.appendChild(div)
                     div.className = 'mt-5 border border-5 rounded-3'
                     let h3 = document.createElement('h3')
-                    h3.innerHTML = k
+                    h3.innerHTML = jsMap.get(k)
                     div.appendChild(h3)
                     let contents = document.createElement('div')
                     div.appendChild(contents)
-                    contents.className = 'm-3 border border-5 rounded-3 '+borderColors[Math.floor(borderColors.length*Math.random())]
+                    // contents.className = 'm-3 border border-5 rounded-3 '+borderColors[Math.floor(borderColors.length*Math.random())]
+                    contents.className = 'm-3 border border-5 rounded-3 border-light'
                     if (Array.isArray(jsonData[k])){
                         let innerDiv = document.createElement('div')
                         contents.appendChild(innerDiv)
                         if (k=='INSTR'){
-                            innerDiv.className = 'list-group'
+                            // innerDiv.className = 'list-group'
                             for (let n =0 ; n<jsonData[k].length; n++){
-                                let a = document.createElement('a')
-                                innerDiv.appendChild(a)
-                                a.className = 'list-group-item list-group-item-action '+groupColors[Math.floor(groupColors.length*Math.random())]
+                                // let a = document.createElement('a')
+                                let span = document.createElement('span')
+                                // innerDiv.appendChild(a)
+                                innerDiv.appendChild(span)
+                                innerDiv.appendChild(document.createElement('br'))
+
+                                // a.className = 'list-group-item list-group-item-action '+groupColors[Math.floor(groupColors.length*Math.random())]
+                                span.className = 'm-3 badge bg-light text-body'
 
                                 let h4 = document.createElement('h4')
-                                a.appendChild(h4)
+                                // a.appendChild(h4)
+                                span.appendChild(h4)
                                 // h5.className = 'text-dark'
                                 h4.innerHTML = (n+1)+ ') '+jsonData[k][n]
                             }
@@ -250,7 +264,8 @@ $(()=>{
                             for (let n =0 ; n<jsonData[k].length; n++){
                                 let span = document.createElement('span')
                                 innerDiv.appendChild(span)
-                                span.className = 'm-3 badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+                                // span.className = 'm-3 badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+                                span.className = 'm-3 badge bg-light text-body'
 
                                 let h4 = document.createElement('h4')
                                 span.appendChild(h4)
@@ -260,12 +275,15 @@ $(()=>{
                     }else{
                         let span = document.createElement('span')
                         contents.appendChild(span)
-                        span.className = 'm-3 badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+                        // span.className = 'm-3 badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
+                        span.className = 'm-3 badge bg-light text-body'
                         let h4 = document.createElement('h4')
                         span.appendChild(h4)
                         h4.innerHTML = jsonData[k]
                     }// if
                 }// for (let k in jsonData){
+
+                document.getElementsByClassName('nav-link')[2].click()
             }// xhttp.onload = function() {
             xhttp.open("GET", location.href + "ingredients/"+foods.join(', '));
             // xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
