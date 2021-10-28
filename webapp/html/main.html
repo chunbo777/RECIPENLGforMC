@@ -21,83 +21,60 @@
 <body>
     <div class="container mt-3 border">
         <!-- <h1 class='m-5 p-5 bg-light text-dark rounded border'>셀럽시피&발명식!</h1> -->
-        <div class='m-5 p-5 bg-light rounded border'><img id="logo" src="/logo/"></div>
-          <!-- Nav pills -->
-        <ul class="nav nav-pills" role="tablist">
-            <li class="nav-item">
-                <a class="nav-link active" data-bs-toggle="pill" href="#home">Home</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="pill" href="#menu1">Menu 1</a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" data-bs-toggle="pill" href="#menu2">Menu 2</a>
-            </li>
-        </ul>
+        <div class='m-5 p-5 bg-light rounded border'>
+            <div class="row m-10">
+                <div class="col-sm-12">
+                    <!-- <img id="logo" class="mx-auto d-block" style="max-height: 200px;" src="/logo/"> -->
+                    <img id="logo" class="img-fluid" src="/logo/">
+                </div>
+                <!-- <div class="col-sm-2">
+                    <img class="img-fluid float-right d-block" style="max-height: 100px;"  src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
+                </div> -->
+            </div>
+        </div>
+        <div class="row m-5 p-5 bg-light rounded">
+            <!-- Nav pills -->
+            <ul class="nav nav-pills" role="tablist">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="pill" href="#home" style="font-size: x-large;">재료 추출</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="pill" href="#menu1"  style="font-size: x-large;">재료 선정</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="pill" href="#menu2"  style="font-size: x-large;">생성된 요리법</a>
+                </li>
+            </ul>
+        </div>
 
         <!-- Tab panes -->
         <div class="tab-content row m-5 p-5  bg-light text-dark rounded">
             <div id="home" class="container tab-pane active "><br>
-                <h3>HOME</h3>
                 <div class="row" id="getentities">
                     <form enctype="multipart/form-data" method="post">
                         <div class="input-group mb-3">
-                            <input accept=".png, .jpg, .jpeg" name="files" type="file" multiple, id="files" class="form-control" >
-                            <button class="btn btn-success" type="submit">식재료 추출</button> 
+                            <input accept=".png, .jpg, .jpeg" name="files" type="file" multiple, id="files" class="form-control" style="font-size: x-large;" >
+                            <button class="btn btn-success" type="submit" style="font-size: x-large;" >식재료 추출</button> 
                         </div>
                     </form>
                 </div>
-                <div class="row m-5 p-5">
-                    <img id="img" class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
-                </div>
-
+                <div class="row m-5 p-5" id="preview"></div>
             </div>
             <div id="menu1" class="container tab-pane fade"><br>
-                <!-- <h3>Menu 1</h3> -->
-                <!-- <div class="row"  style="display: none;"> -->
                 <div class="row">
                     <div class="col-sm-12 mb-5 border border-5 rounded-3" id="detectedFromImg" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
-                <!-- <div class="row"  style="display: none;"> -->
                 <div class="row">
-                    <div class="col-sm-11 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    <div class="col-sm-1"><button type="button" class="btn btn-primary" id="getRecipe">레시피<br/>생성</button></div>
+                    <div class="col-sm-9 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="col-sm-3"><button type="button" class="btn btn-primary" id="getRecipe" style="min-height: 150px; font-size: x-large; min-width: 100%;">레시피 생성</button></div>
                 </div>
             </div>
             <div id="menu2" class="container tab-pane fade"><br>
-                <!-- <h3>Menu 2</h3> -->
-                <!-- <div class="row m-5 p-5  bg-light text-dark rounded" style="display: none;"> -->
-                <div class="row m-5 p-5  bg-light text-dark rounded">
+                <div class="row">
                     <div class="row" id='Recipe'></div>
                 </div>
-
             </div>
         </div>
-        <!-- <div class="row m-5 p-5  bg-light text-dark rounded" style="display: none;">
-            <div class="row" id='Recipe'></div>
-        </div>
-        <div class="row m-5 p-5  bg-light text-dark rounded " id ='inputs'>
-            <div class="col-sm-4">
-                <img id="img" class="img-fluid" src="https://th.bing.com/th/id/R.374b01f37e7993217f13b14ee9916223?rik=t5QB3IDWf93yAw&riu=http%3a%2f%2fpostfiles6.naver.net%2f20151116_53%2funesco1128_1447659335467lqOdR_GIF%2fnl9vkuA.gif%3ftype%3dw2&ehk=EqdpOrfDkLun5HLx1KzJwdoETDEZiG8Cwzw7qdhktFA%3d&risl=&pid=ImgRaw&r=0" alt="냠냠">
-            </div>
-            <div class="col-sm-8">
-                <div class="row"  style="display: none;">
-                    <div class="col-sm-12 mb-5 border border-5 rounded-3" id="detectedFromImg" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                </div>
-                <div class="row"  style="display: none;">
-                    <div class="col-sm-11 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    <div class="col-sm-1"><button type="button" class="btn btn-primary" id="getRecipe">레시피<br/>생성</button></div>
-                </div>
-                <div class="row" id="getentities">
-                    <form enctype="multipart/form-data" method="post">
-                        <div class="input-group mb-3">
-                            <input accept=".png, .jpg, .jpeg" name="files" type="file" multiple, id="files" class="form-control" >
-                            <button class="btn btn-success" type="submit">식재료 추출</button> 
-                          </div>
-                    </form>
-                </div>
-            </div>
-        </div> -->
     </div>
 </body>
 </html>
