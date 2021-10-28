@@ -5,7 +5,8 @@ import traceback
 import os
 
 # df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/full_dataset.csv")
-df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/data_1m.csv", )
+# df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/data_1m.csv", )
+df = pd.read_csv(f"{os.path.dirname(__file__)}/datain/before_h5_2021102513.csv", )
 
 import re
 
@@ -63,19 +64,23 @@ def df_to_plaintext_file(input_df, output_file):
     with open(output_file, 'w', encoding="utf-8") as f:
 
         for index, row in input_df.iterrows():
-            if index%100000==0:
+            if index%10000==0:
                 print(index)
             # if type(row.NER)!=str:
-            if type(row[row.index.values[-1]])!=str:
+            if type(row['title'])!=str or type(row['dir'])!=str or type(row['ingr'])!=str or type(row['ingr.1'])!=str:
                 continue
             # title = row.title
             # directions = json.loads(row.directions)
             # ingredients = json.loads(row.ingredients)
             # ner = json.loads(row.NER)
-            title = row[row.index.values[1]].replace('\u200b','')
-            directions = re.split('"[,\s|\s,]+["]*', row[row.index.values[2]].replace('\u200b','').strip(' "[]"'))
-            ingredients = re.split('"[,\s|\s,]+["]*', row[row.index.values[3]].replace('\u200b','').strip(' "[]"'))
-            ner = re.split('"[,\s|\s,]+["]*', row[row.index.values[4]].replace('\u200b','').strip(' "[]"'))
+            # title = row[row.index.values[1]].replace('\u200b','')
+            # directions = re.split('"[,\s|\s,]+["]*', row[row.index.values[2]].replace('\u200b','').strip(' "[]"'))
+            # ingredients = re.split('"[,\s|\s,]+["]*', row[row.index.values[3]].replace('\u200b','').strip(' "[]"'))
+            # ner = re.split('"[,\s|\s,]+["]*', row[row.index.values[4]].replace('\u200b','').strip(' "[]"'))
+            title = row['title']
+            directions = row['dir'].split('@#')
+            ingredients = row['ingr'].split('@#')
+            ner =row['ingr.1'].split('@#')
 
             '''
             20210902
@@ -93,5 +98,5 @@ def df_to_plaintext_file(input_df, output_file):
               " <NEXT_INSTR> ".join(directions) + " <INSTR_END> <TITLE_START> " + title + " <TITLE_END> <RECIPE_END>"
             f.write("{}\n".format(res))
 
-df_to_plaintext_file(train, f'{os.path.dirname(__file__)}/datain/unsupervised_train_kr_1m_translated.txt')
-df_to_plaintext_file(test, f'{os.path.dirname(__file__)}/datain/unsupervised_test_kr_1m_translated.txt')
+df_to_plaintext_file(train, f'{os.path.dirname(__file__)}/datain/train_kr_{len(train)}.txt')
+df_to_plaintext_file(test, f'{os.path.dirname(__file__)}/datain/test_kr_{len(test)}.txt')

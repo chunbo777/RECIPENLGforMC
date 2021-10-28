@@ -43,18 +43,18 @@ class TextDataset(Dataset):
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised_short.h5"
         # cached_features_file = "/home/lab17/recipe_generation/recipenlg/generation/datain/unsupervised.h5"
         # cached_features_file = "/home/lab17/RECIPENLGforMC/generation_prac/datain/unsupervised_translated.h5"
-        cached_features_file = f"{os.path.dirname(__file__)}/datain/unsupervised_translated_short.h5"
+        cached_features_file = f"{os.path.dirname(__file__)}/datain/tokenized.h5"
 
         logger.info("Loading features from cached file %s", cached_features_file)
         with h5py.File(cached_features_file, 'r') as f:
             if file_path=='test':
                 # self.examples = f[file_path][:] #this is a dev set, 10% of a test set
                 # self.examples = f['unsupervised_test_translated'][:] # 저장할때 사용한 파일명
-                self.examples = f['unsupervised_test_kr_1m_translated_short'][:] # 저장할때 사용한 파일명
+                self.examples = f['test_kr_14779'][:] # 저장할때 사용한 파일명
             else:
                 # self.examples = f[file_path][:]
                 # self.examples = f['unsupervised_train_translated'][:]#  저장할때 사용한 파일명
-                self.examples = f['unsupervised_train_kr_1m_translated_short'][:]#  저장할때 사용한 파일명
+                self.examples = f['train_kr_280789'][:]#  저장할때 사용한 파일명
 
     def __len__(self):
         return len(self.examples)
@@ -293,16 +293,16 @@ def main():
     # 20210826
     # parser.add_argument("--model_name_or_path", default="bert-base-cased", type=str,
     #                     help="The model checkpoint for weights initialization.")
-    parser.add_argument("--model_name_or_path", default="gpt2", type=str, help="The model checkpoint for weights initialization.")
-    # parser.add_argument("--model_name_or_path", default="mbien/recipenlg", type=str, help="The model checkpoint for weights initialization.")
+    # parser.add_argument("--model_name_or_path", default="gpt2", type=str, help="The model checkpoint for weights initialization.")
+    parser.add_argument("--model_name_or_path", default="mbien/recipenlg", type=str, help="The model checkpoint for weights initialization.")
 
     parser.add_argument("--config_name", default="", type=str,
                         help="Optional pretrained config name or path if not the same as model_name_or_path")
     # 20210827 git 참고
     # parser.add_argument("--tokenizer_name", default="", type=str,
     #                     help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
-    parser.add_argument("--tokenizer_name", default="gpt2", type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
-    # parser.add_argument("--tokenizer_name", default="mbien/recipenlg", type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
+    # parser.add_argument("--tokenizer_name", default="gpt2", type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
+    parser.add_argument("--tokenizer_name", default="mbien/recipenlg", type=str, help="Optional pretrained tokenizer name or path if not the same as model_name_or_path")
 
     parser.add_argument("--cache_dir", default="", type=str,
                         help="Optional directory to store the pre-trained models downloaded from s3 (instread of the default one)")

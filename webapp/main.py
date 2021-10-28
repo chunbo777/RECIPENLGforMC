@@ -6,9 +6,11 @@ from html.html import getHTML
 from js.js import getScript
 from generation.run_generation import main
 from generation.get_entities import detect_text_uri, get_tag_from_db
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
 import json
 import re
+import os
+
 app = FastAPI()
 @app.get("/")
 async def root():
@@ -19,6 +21,9 @@ async def root():
 
     return HTMLResponse(contents, status_code=200)
 
+@app.get("/logo/")
+async def get_logo():
+    return FileResponse(f'{os.path.dirname(__file__)}/webapp_title.png')
 
 @app.get("/ingredients/{ingredients}")
 async def get_recipe(ingredients):
@@ -45,7 +50,7 @@ from typing import List
 #     return {"file_sizes": [len(file) for file in files]}
 
 
-import os
+
 @app.post("/uploadfiles/")
 async def create_upload_files(files: List[UploadFile] = File(...)):
     result = {}

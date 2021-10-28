@@ -18,11 +18,11 @@ class EntitiesWithMySqlPipeline:
         self.curr = self.conn.cursor(buffered=True)
 
     def get_entities(self, inputs):
-        sql = f'''
-        select word from words_for_tagging 
-        where in_use =1 and cate ='ingr' 
-        and word in ("{'","'.join([input for input in inputs if input.strip()!=''])}"); 
-        '''
+        # sql = f'''
+        # select word from words_for_tagging 
+        # where in_use =1 and cate ='ingr' 
+        # and word in ("{'","'.join([input for input in inputs if input.strip()!=''])}"); 
+        # '''
         sql = f'''
         with 
         temp as (
