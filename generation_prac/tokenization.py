@@ -2,9 +2,10 @@ from transformers import GPT2Tokenizer, PreTrainedTokenizerFast
 import h5py
 import numpy as np
 import os
+from tqdm import tqdm# 20211025
 
-# tokenizer = GPT2Tokenizer.from_pretrained("gpt2", do_lower_case=False)
-tokenizer = PreTrainedTokenizerFast.from_pretrained("skt/kogpt2-base-v2")
+tokenizer = GPT2Tokenizer.from_pretrained("mbien/recipenlg", do_lower_case=False)
+# tokenizer = PreTrainedTokenizerFast.from_pretrained("/kogpt2-sktbase-v2")
 special_tokens = {
     "additional_special_tokens": [
         "<TITLE_START>",
@@ -29,17 +30,17 @@ tokenizer.add_special_tokens(special_tokens)
 
 end_token_id = tokenizer.convert_tokens_to_ids(["<RECIPE_END>"])[0]
 
-hf = h5py.File(f"{os.path.dirname(__file__)}/datain/unsupervised_translated_short.h5", "w")
-for filename in ["unsupervised_test_kr_1m_translated_short", "unsupervised_train_kr_1m_translated_short"]:
+hf = h5py.File(f"{os.path.dirname(__file__)}/datain/tokenized.h5", "w")
+for filename in ["test_kr_14779", "train_kr_280789"]:
     out_np = []
     data = open(f"{os.path.dirname(__file__)}/datain/"+filename+".txt", "r", encoding='utf-8')
     num = 0
     rows = 0
     last=[]
-    for line in data:
+    for line in tqdm(data):# 20211025 tqdm 적용
         num+=1
-        if num%10000 == 0:
-            print("Read "+str(num)+" Written: "+str(rows))
+        # if num%10000 == 0:# 20211025
+        #     print("Read "+str(num)+" Written: "+str(rows))
 
         text_tokens = tokenizer.tokenize(line)#subword tokenizer
 
