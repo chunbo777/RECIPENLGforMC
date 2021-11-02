@@ -109,15 +109,20 @@ class AttrDict(dict):
         super(AttrDict, self).__init__(*args, **kwargs)
         self.__dict__ = self
 
-def main(ingredients=None):
-
+def main(ingredients=None, modeltype=str(1)):
+    print(f'ingredients : {ingredients}')
+    print(f'modeltype : {modeltype}')
     args = AttrDict()
-    args.update({
-        # 'model_type':'gpt2', 'model_name_or_path':'mbien/recipenlg'
-        # 'model_type':'kogpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model'
-        'model_type':'gpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model'
-        , 'prompt':'', 'length':2048, 'temperature':1.0, 'top_k':0, 'top_p':0.9, 'no_cuda':'','seed' : 42 
-    })
+    args.update({'prompt':'', 'length':2048, 'temperature':1.0, 'top_k':0, 'top_p':0.9, 'no_cuda':'','seed' : 42})
+    if modeltype!=None:
+        if modeltype ==str(1):
+            args.update({'model_type':'gpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model/KR/'})
+        elif modeltype ==str(2):
+            args.update({'model_type':'kogpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model/leekyungryun/'})
+            # args.update({'model_type':'gpt2', 'model_name_or_path':'mbien/recipenlg'})
+        elif modeltype ==str(3):
+            args.update({'model_type':'kogpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model/baek'})
+            # args.update({'model_type':'gpt2', 'model_name_or_path':f'{os.path.dirname(__file__)}/model'})
 
     print(args)
     start = datetime.now()
@@ -147,8 +152,10 @@ def main(ingredients=None):
         if ingredients is None:
             raw_text = args.prompt if args.prompt else input("Comma-separated ingredients, semicolon to close the list >>> ")
         else:
-            raw_text = ingredients
+            raw_text = ingredients+';'
+        
         prepared_input = '<RECIPE_START> <INPUT_START> ' + raw_text.replace(',', ' <NEXT_INPUT> ').replace(';', ' <INPUT_END>')
+        # print(prepared_input)
         context_tokens = tokenizer.encode(prepared_input)
         out = sample_sequence(
             model=model,
@@ -168,10 +175,10 @@ def main(ingredients=None):
             print("Failed to generate, recipe's too long")
             continue
         full_text = prepared_input + text
-        
+        # print(full_text)
         jsonData = {'TITLE':None, 'INPUT':None,'INGR':None,'INSTR':None}
         for k, v in jsonData.items():
-             tmp = re.split(f'<NEXT_{k}>',re.sub(f'<{k}_START>|<{k}_END>','',re.search(f"<{k}_START>.*<{k}_END>", full_text).group(0)))
+             tmp = re.split(f'<NEXT_{k}>',re.sub(f'<{k}_START>|<{k}_END>','',re.search(f"<{k}_START>.*<{k}_END>", re.sub('\n',' ',full_text)).group(0)))
              jsonData.update({k:[i.strip() for i in tmp] if len(tmp)>1 else tmp[0]})
         if args.prompt or ingredients is not None:
             break

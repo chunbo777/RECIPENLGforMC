@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>발명식</title>
     <style>
         html, body { height: 100%;}
         body {color: #fff;}
@@ -55,6 +55,7 @@
                         <div class="input-group mb-3">
                             <input accept=".png, .jpg, .jpeg" name="files" type="file" multiple, id="files" class="form-control" style="font-size: x-large;" >
                             <button class="btn btn-success" type="submit" style="font-size: x-large;" >식재료 추출</button> 
+
                         </div>
                     </form>
                 </div>
@@ -65,8 +66,26 @@
                     <div class="col-sm-12 mb-5 border border-5 rounded-3" id="detectedFromImg" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
                 </div>
                 <div class="row">
-                    <div class="col-sm-9 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-                    <div class="col-sm-3"><button type="button" class="btn btn-primary" id="getRecipe" style="min-height: 150px; font-size: x-large; min-width: 100%;">레시피 생성</button></div>
+                    <div class="col-sm-8 border border-5 rounded-3" id="params" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+                    <div class="col-sm-2">
+                        <button type="button" class="btn btn-primary" id="getRecipe" style="min-height: 150px; font-size: x-large; min-width: 100%;">레시피</br>생성</button>
+                    </div>
+                    <div class="col-sm-2">
+                        <form>
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input" id="radio1" name="optradio" value=1 checked>
+                                <label class="form-check-label" for="radio1">한국식</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input" id="radio2" name="optradio" value=2>
+                                <label class="form-check-label" for="radio2">외국식</label>
+                            </div>
+                            <div class="form-check">
+                                <input type="radio" class="form-check-input"  id="radio3" name="optradio" value=3>
+                                <label class="form-check-label" for="radio3">백종원식</label>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
             <div id="menu2" class="container tab-pane fade"><br>
