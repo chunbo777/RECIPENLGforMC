@@ -30,6 +30,12 @@ whenSpanClicked = (root, text)=>{
         const xhttp = new XMLHttpRequest();
         xhttp.onload = function() {
             jsonData = JSON.parse(this.responseText)
+            if(jsonData==null){
+                // alert('DB에 해당되는 값이 없습니다.')
+                // return
+                // [재료값,? ,분류, 분류코드]
+                jsonData = [$(e.target.parentElement).find('input')[0].value, undefined,'not_in_db',0]
+            }
             span = document.createElement('span')
             e.target.parentElement.parentElement.appendChild(span)
             span.title = jsonData[jsonData.length-2]
@@ -107,15 +113,22 @@ $(()=>{
     $(document).on('change',(e)=>{
         if(e.target.tagName == 'INPUT' & e.target.type == 'file'){
             if(e.target.files.length>0){
+                let root = document.getElementById('preview')
+                if ($(root).find('img').length >0){
+                    $(root).empty()
+                }
+
                 let img = document.createElement('img')
                 document.getElementById('preview').appendChild(img)
                 img.src = URL.createObjectURL(e.target.files[0])
                 img.className = 'img-fluid'
             }
+
+            
         }
     })
     $(document).on('submit',(e)=>{
-        e.preventDefault()
+        e.preventDefault() 
         if(e.target.elements[0].files.length==0){
             alert('파일을 선택해주세요')
             return
@@ -125,14 +138,15 @@ $(()=>{
         span = document.createElement('span')
         e.target.elements[1].appendChild(span)
         span.className = 'spinner-border spinner-border-sm'
-        e.target.elements[1].innerHTML += ' Loading..'
+        // e.target.elements[1].innerHTML += ' Loading..'
+        e.target.elements[1].innerHTML += ' 명식이가 식재료를 인식중입니다..'
         e.target.elements[1].disabled = true
 
         const xhttp = new XMLHttpRequest();
         xhttp.onload = function() {
             $(e.target.elements[1]).empty() 
             e.target.elements[1].className = 'btn btn-success'
-            e.target.elements[1].innerHTML = '식재료 추출'
+            e.target.elements[1].innerHTML = '식재료 인식'
             e.target.elements[1].disabled = false
 
             jsonData = JSON.parse(this.responseText)
@@ -198,7 +212,8 @@ $(()=>{
                 span = document.createElement('span')
                 e.target.appendChild(span)
                 span.className = 'spinner-border spinner-border-sm'
-                e.target.innerHTML += ' Loading..'
+                // e.target.innerHTML += ' Loading..'
+                e.target.innerHTML += ' 명식이가 레시피를 발명중입니다..'
                 e.target.disabled = true
             }
                 
@@ -207,13 +222,14 @@ $(()=>{
                 const element = array[index].innerHTML;
                 foods.push(element)
             }
-            
+            const modeltype = e.target.parentElement.parentElement.querySelector('input:checked').value
+
             const xhttp = new XMLHttpRequest();
             xhttp.onload = function() {
 
                 $(e.target).empty() 
                 e.target.className = 'btn btn-primary'
-                e.target.innerHTML = '레시피 생성'
+                e.target.innerHTML = '레시피<br>생성'
                 e.target.disabled = false
 
                 const jsonData = JSON.parse(JSON.parse(this.responseText))// parse
@@ -248,7 +264,7 @@ $(()=>{
                     if (Array.isArray(jsonData[k])){
                         let innerDiv = document.createElement('div')
                         contents.appendChild(innerDiv)
-                        // innerDiv.className = 'row'
+                        innerDiv.className = 'm-5'
                         if (k=='INSTR'){
                             // innerDiv.className = 'list-group'
                             for (let n =0 ; n<jsonData[k].length; n++){
@@ -258,28 +274,30 @@ $(()=>{
                                 wrapperDiv.className = 'row'
                                 let span = document.createElement('span')
                                 wrapperDiv.appendChild(span)
-                                // innerDiv.appendChild(a)
                                 innerDiv.appendChild(document.createElement('br'))
 
-                                // a.className = 'list-group-item list-group-item-action '+groupColors[Math.floor(groupColors.length*Math.random())]
-                                // span.className = 'm-3 badge bg-light text-body'
-
-                                // let h4 = document.createElement('h4')
-                                // span.appendChild(h4)
-                                // h4.innerHTML = (n+1)+ ') '+jsonData[k][n]
                                 span.innerHTML = (n+1)+ ') '+jsonData[k][n]
                                 span.style.fontSize = 'x-large'
                             }
-                        }else {                            
+                        }else {
+                            let deeperDiv = undefined                       
                             for (let n =0 ; n<jsonData[k].length; n++){
-                                let span = document.createElement('span')
-                                innerDiv.appendChild(span)
-                                // span.className = 'm-3 badge '+bgclasses[Math.floor(bgclasses.length*Math.random())]
-                                span.className = 'm-3 badge bg-light text-body'
+                                if (n%4==0){
+                                    deeperDiv = document.createElement('div')
+                                    innerDiv.appendChild(deeperDiv)
+                                    deeperDiv.className = 'row'
+                                }
 
-                                let h4 = document.createElement('h4')
-                                span.appendChild(h4)
-                                h4.innerHTML = jsonData[k][n]
+                                let wrapperDiv = document.createElement('div')
+                                deeperDiv.appendChild(wrapperDiv)
+                                wrapperDiv.className = 'col'
+
+                                let span = document.createElement('span')
+                                wrapperDiv.appendChild(span)
+
+                                // innerDiv.appendChild(document.createElement('br'))
+                                span.innerHTML = jsonData[k][n]
+                                span.style.fontSize = 'x-large'
                             }
                         }
                     }else{
@@ -295,7 +313,7 @@ $(()=>{
 
                 document.getElementsByClassName('nav-link')[2].click()
             }// xhttp.onload = function() {
-            xhttp.open("GET", location.href + "ingredients/"+foods.join(', '));
+            xhttp.open("GET", location.href + "ingredients/"+foods.join(', ')+'?modeltype='+modeltype);
             // xhttp.open("POST", "http://127.0.0.1:8000/item/"+foods.join(', '));
             xhttp.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
             xhttp.send();

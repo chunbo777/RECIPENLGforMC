@@ -1,6 +1,7 @@
 # "main" module, e.g. import app.main
 
 from fastapi import FastAPI, File, UploadFile
+from typing import Optional
 from core.config import settings
 from html.html import getHTML
 from js.js import getScript
@@ -26,19 +27,20 @@ async def get_logo():
     return FileResponse(f'{os.path.dirname(__file__)}/webapp_title.png')
 
 @app.get("/ingredients/{ingredients}")
-async def get_recipe(ingredients):
+async def get_recipe(ingredients, modeltype: Optional[str] = None):
 
+    # print(modeltype)
     # recipe = str(ingredients)
-    recipe = main(ingredients)
+    recipe = main(ingredients, modeltype)
     return json.dumps(recipe)
 
 @app.get("/get_tag/{word}")
 async def get_tag(word):
     # recipe = str(ingredients)
     # recipe = main(ingredients)
-    
-    tag = get_tag_from_db(word)
+
     print(word)
+    tag = get_tag_from_db(word)
     print(tag)
     return tag
 
